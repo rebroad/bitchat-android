@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
@@ -179,12 +180,13 @@ class MainActivity : OrientationAwareActivity() {
         val isLocationLoading by mainViewModel.isLocationLoading.collectAsState()
         val isBatteryOptimizationLoading by mainViewModel.isBatteryOptimizationLoading.collectAsState()
 
+        // Monitor Bluetooth state changes in real-time
         DisposableEffect(context, bluetoothStatusManager) {
-
             val receiver = bluetoothStatusManager.monitorBluetoothState(
                 context = context,
                 bluetoothStatusManager = bluetoothStatusManager,
                 onBluetoothStateChanged = { status ->
+                    mainViewModel.updateBluetoothStatus(status)
                     if (status == BluetoothStatus.ENABLED && onboardingState == OnboardingState.BLUETOOTH_CHECK) {
                         checkBluetoothAndProceed()
                     }
@@ -262,6 +264,9 @@ class MainActivity : OrientationAwareActivity() {
                     onContinue = {
                         mainViewModel.updateOnboardingState(OnboardingState.PERMISSION_REQUESTING)
                         onboardingCoordinator.requestPermissions()
+                    },
+                    onCancel = {
+                        finish()
                     }
                 )
             }
@@ -284,6 +289,7 @@ class MainActivity : OrientationAwareActivity() {
 
                 // Add the callback - this will be automatically removed when the activity is destroyed
                 onBackPressedDispatcher.addCallback(this, backCallback)
+                
                 ChatScreen(viewModel = chatViewModel)
             }
             
