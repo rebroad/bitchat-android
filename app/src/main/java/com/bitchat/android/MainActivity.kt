@@ -264,9 +264,6 @@ class MainActivity : OrientationAwareActivity() {
                     onContinue = {
                         mainViewModel.updateOnboardingState(OnboardingState.PERMISSION_REQUESTING)
                         onboardingCoordinator.requestPermissions()
-                    },
-                    onCancel = {
-                        finish()
                     }
                 )
             }
