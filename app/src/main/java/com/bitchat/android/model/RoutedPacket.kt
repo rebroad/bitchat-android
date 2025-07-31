@@ -10,5 +10,6 @@ data class RoutedPacket(
     val packet: BitchatPacket,
     val peerID: String? = null,           // Who sent it (parsed from packet.senderID)
     val relayAddress: String? = null,     // Address it came from (for avoiding loopback)
+    val deviceAddress: String? = null,    // Device address (for address-peer mapping)
     val transferId: String? = null        // Optional stable transfer ID for progress tracking
 )
