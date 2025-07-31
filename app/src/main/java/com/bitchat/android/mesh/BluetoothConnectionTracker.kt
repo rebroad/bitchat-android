@@ -13,9 +13,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Tracks all Bluetooth connections and handles cleanup
  */
-class BluetoothConnectionTracker(
+open class BluetoothConnectionTracker(
     private val connectionScope: CoroutineScope,
-    private val powerManager: PowerManager
+    private val powerManager: PowerManager,
+    private val delegate: BluetoothConnectionManagerDelegate? = null
 ) {
     
     companion object {
@@ -41,6 +42,7 @@ class BluetoothConnectionTracker(
     
     // State management
     private var isActive = false
+    private var previousSize = connectedDevices.size
     
     /**
      * Consolidated device connection information
@@ -283,6 +285,7 @@ class BluetoothConnectionTracker(
         connectedDevices.remove(deviceAddress)?.let { deviceConn ->
             subscribedDevices.removeAll { it.address == deviceAddress }
             addressPeerMap.remove(deviceAddress)
+            delegate?.onDeviceDisconnected(deviceConn.device) // we need to notify delegate
         }
         firstAnnounceSeen.remove(deviceAddress)
         Log.d(TAG, "Cleaned up device connection for $deviceAddress")
@@ -342,6 +345,7 @@ class BluetoothConnectionTracker(
         connectionScope.launch {
             while (isActive) {
                 delay(CLEANUP_INTERVAL)
+                previousSize = connectedDevices.size
                 
                 if (!isActive) break
                 
@@ -349,10 +353,25 @@ class BluetoothConnectionTracker(
                     // Clean up expired pending connections
                     val expiredConnections = pendingConnections.filter { it.value.isExpired() }
                     expiredConnections.keys.forEach { pendingConnections.remove(it) }
-                    
+
+                    // Clean up stale connections (no activity for 60 seconds)
+                    val now = System.currentTimeMillis()
+                    connectedDevices.entries.removeAll{ (address, deviceConn) ->
+                        val isStale = now - deviceConn.connectedAt > 60000L
+                        if (isStale) {
+                            cleanupDeviceConnection(address)
+                            true
+                        }else {
+                            false
+                        }
+                    }
+
                     // Log cleanup if any
                     if (expiredConnections.isNotEmpty()) {
                         Log.d(TAG, "Cleaned up ${expiredConnections.size} expired connection attempts")
+                    }
+                    if (connectedDevices.size < previousSize) {
+                        Log.d(TAG, "Cleaned up ${previousSize - connectedDevices.size} stale connections")
                     }
                     
                     // Log current state
