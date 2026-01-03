@@ -223,6 +223,7 @@ public final class Noise {
 	 * class, then this function will instead throw an instance of
 	 * the superclass BadPaddingException.
 	 */
+	@SuppressWarnings("deprecation")
 	static void throwBadTagException() throws BadPaddingException
 	{
 		try {
