@@ -750,13 +750,10 @@ class ChatViewModel(
                     }
                 }
                 content.startsWith("connect4_invite:") -> {
-                    // Game invite
+                    // Game invite - just process it, don't auto-navigate or show dialog
                     val parsed = connect4GameManager.parseInvite(content)
                     if (parsed != null) {
                         connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
-                        // Navigate to private chat and show color selection
-                        state.setSelectedPrivateChatPeer(senderPeerID)
-                        state.setShowConnect4ColorSelection(senderPeerID)
                         Log.d(TAG, "Received Connect 4 invite from $senderPeerID")
                     }
                 }
@@ -791,6 +788,12 @@ class ChatViewModel(
                             Log.d(TAG, "Game started with $senderPeerID")
                         }
                     }
+                }
+                content.startsWith("connect4_decline:") -> {
+                    // Decline invite (from recipient)
+                    connect4GameManager.handleDecline(senderPeerID)
+                    state.setShowConnect4ColorSelection(null)
+                    Log.d(TAG, "Game invite declined by $senderPeerID")
                 }
             }
         }
@@ -956,11 +959,21 @@ class ChatViewModel(
     }
 
     /**
+     * Accept an invite request (shows color selection dialog)
+     */
+    fun acceptConnect4InviteRequest(peerID: String) {
+        // Show color selection dialog when user clicks Accept
+        state.setShowConnect4ColorSelection(peerID)
+    }
+
+    /**
      * Decline an invite
      */
     fun declineConnect4Invite(peerID: String) {
-        connect4GameManager.declineInvite(peerID)
+        val declineMessage = connect4GameManager.declineInvite(peerID)
+        sendGameMessage(peerID, declineMessage)
         state.setShowConnect4ColorSelection(null)
+        Log.d(TAG, "Declined Connect 4 invite from $peerID")
     }
 
     /**

@@ -133,14 +133,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
             // Connect 4 game UI (if active for this private chat)
             selectedPrivatePeer?.let { peerID ->
-                // Auto-show color selection dialog if there's a pending invite
-                LaunchedEffect(peerID) {
-                    val setupState = viewModel.getConnect4SetupState(peerID)
-                    if (setupState == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_RECEIVED) {
-                        viewModel.showConnect4ColorSelection(peerID)
-                    }
-                }
-
                 val currentGame = connect4Games[peerID]
                 val shouldShowGame = currentGame != null && (showConnect4Game == peerID || showConnect4Game == null)
 
@@ -196,6 +188,12 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 modifier = Modifier.weight(1f),
                 forceScrollToBottom = forceScrollToBottom,
                 onScrolledUpChanged = { isUp -> isScrolledUp = isUp },
+                onAcceptConnect4Invite = { peerID ->
+                    viewModel.acceptConnect4InviteRequest(peerID)
+                },
+                onDeclineConnect4Invite = { peerID ->
+                    viewModel.declineConnect4Invite(peerID)
+                },
                 onNicknameClick = { fullSenderName ->
                     // Single click - mention user in text input
                     val currentText = messageText.text

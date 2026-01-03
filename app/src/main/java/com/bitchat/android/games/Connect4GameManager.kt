@@ -322,10 +322,19 @@ class Connect4GameManager {
     }
 
     /**
-     * Decline an invite
+     * Decline an invite and return the decline message to send
      */
-    fun declineInvite(peerID: String) {
+    fun declineInvite(peerID: String): String {
         gameSetups.remove(peerID)
+        return DECLINE_PREFIX
+    }
+
+    /**
+     * Handle decline message (from recipient)
+     */
+    fun handleDecline(peerID: String) {
+        gameSetups.remove(peerID)
+        Log.d(TAG, "Game invite declined by $peerID")
     }
 
     /**

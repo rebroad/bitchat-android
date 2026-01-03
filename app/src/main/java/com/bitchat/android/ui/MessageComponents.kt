@@ -65,7 +65,9 @@ fun MessagesList(
     onNicknameClick: ((String) -> Unit)? = null,
     onMessageLongPress: ((BitchatMessage) -> Unit)? = null,
     onCancelTransfer: ((BitchatMessage) -> Unit)? = null,
-    onImageClick: ((String, List<String>, Int) -> Unit)? = null
+    onImageClick: ((String, List<String>, Int) -> Unit)? = null,
+    onAcceptConnect4Invite: ((String) -> Unit)? = null,
+    onDeclineConnect4Invite: ((String) -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
     
@@ -129,7 +131,9 @@ fun MessagesList(
                     onNicknameClick = onNicknameClick,
                     onMessageLongPress = onMessageLongPress,
                     onCancelTransfer = onCancelTransfer,
-                    onImageClick = onImageClick
+                    onImageClick = onImageClick,
+                    onAcceptConnect4Invite = onAcceptConnect4Invite,
+                    onDeclineConnect4Invite = onDeclineConnect4Invite
                 )
         }
     }
@@ -145,7 +149,9 @@ fun MessageItem(
     onNicknameClick: ((String) -> Unit)? = null,
     onMessageLongPress: ((BitchatMessage) -> Unit)? = null,
     onCancelTransfer: ((BitchatMessage) -> Unit)? = null,
-    onImageClick: ((String, List<String>, Int) -> Unit)? = null
+    onImageClick: ((String, List<String>, Int) -> Unit)? = null,
+    onAcceptConnect4Invite: ((String) -> Unit)? = null,
+    onDeclineConnect4Invite: ((String) -> Unit)? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val timeFormatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
@@ -194,6 +200,40 @@ fun MessageItem(
             }
         }
         
+        // Connect 4 invite buttons (if this is a received invite message)
+        if (message.isPrivate &&
+            message.senderPeerID != null &&
+            message.senderPeerID != meshService.myPeerID &&
+            message.content.startsWith("connect4_invite:")) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, start = 12.dp, end = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        message.senderPeerID?.let { peerID ->
+                            onAcceptConnect4Invite?.invoke(peerID)
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Accept")
+                }
+                OutlinedButton(
+                    onClick = {
+                        message.senderPeerID?.let { peerID ->
+                            onDeclineConnect4Invite?.invoke(peerID)
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Decline")
+                }
+            }
+        }
+
         // Link previews removed; links are now highlighted inline and clickable within the message text
     }
 }
