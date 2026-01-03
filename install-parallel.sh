@@ -17,23 +17,41 @@ if [ -z "$DEVICES" ]; then
     exit 1
 fi
 
-echo "Installing to devices in parallel:"
-echo "$DEVICES"
-echo ""
-
 # Install to each device in background
 PIDS=()
-for device in $DEVICES; do
-    echo "Installing to $device..."
-    adb -s "$device" install -r "$APK_PATH" &
+MODELS=()
+EXIT_CODES=()
+
+# Convert DEVICES to array to iterate properly
+DEVICE_ARRAY=($DEVICES)
+
+SCRIPT_START=$(date +%s)
+
+for device in "${DEVICE_ARRAY[@]}"; do
+    # Get model name for this device
+    model=$(adb -s "$device" shell getprop ro.product.model 2>/dev/null || echo "$device")
+    MODELS+=("$model")
+
+    # Run install in background, prefixing output lines with elapsed time and device model
+    (
+        set -o pipefail
+        INSTALL_START=$(date +%s)
+        stdbuf -oL -eL adb -s "$device" install -r "$APK_PATH" 2>&1 | while IFS= read -r line; do
+            ELAPSED=$(($(date +%s) - INSTALL_START))
+            echo "[${ELAPSED}s] $line [$model]"
+        done
+        exit ${PIPESTATUS[0]}
+    ) &
     PIDS+=($!)
 done
 
-# Wait for all installations to complete
+# Wait for all installations to complete and capture exit codes
 FAILED=0
-for pid in "${PIDS[@]}"; do
-    wait $pid
-    if [ $? -ne 0 ]; then
+for i in "${!PIDS[@]}"; do
+    wait ${PIDS[$i]}
+    exit_code=$?
+    EXIT_CODES+=($exit_code)
+    if [ $exit_code -ne 0 ]; then
         FAILED=1
     fi
 done
