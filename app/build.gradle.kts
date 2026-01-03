@@ -59,6 +59,7 @@ android {
     }
     buildFeatures {
         compose = true
+        aidl = true  // Enable AIDL compilation
     }
     packaging {
         resources {

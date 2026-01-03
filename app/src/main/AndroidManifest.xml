@@ -52,6 +52,11 @@
         android:name="com.bitchat.android.permission.FORCE_FINISH"
         android:protectionLevel="signature" />
 
+    <!-- Permission for using mesh API (normal level - any app can request) -->
+    <permission
+        android:name="com.bitchat.android.permission.USE_MESH_API"
+        android:protectionLevel="normal" />
+
     <application
         android:name=".BitchatApplication"
         android:allowBackup="false"
@@ -119,5 +124,20 @@
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- Exported Mesh API Service for other apps -->
+        <service
+            android:name=".api.MeshApiService"
+            android:exported="true"
+            android:permission="com.bitchat.android.permission.USE_MESH_API">
+            <intent-filter>
+                <action android:name="com.bitchat.android.api.MESH_API" />
+            </intent-filter>
+        </service>
+
+        <!-- TCP/IP Bridge Service (optional, for bridging mesh to TCP/IP) -->
+        <service
+            android:name=".api.TcpIpBridgeService"
+            android:exported="false" />
     </application>
 </manifest>

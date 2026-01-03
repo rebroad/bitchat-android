@@ -152,6 +152,16 @@ class PeerManager {
     }
 
     /**
+     * Get all active peers (for API access)
+     */
+    fun getAllActivePeers(): Map<String, PeerInfo> {
+        val now = System.currentTimeMillis()
+        return peers.filter { (_, info) ->
+            info.isConnected && (now - info.lastSeen) < stalePeerTimeoutMs
+        }
+    }
+
+    /**
      * Check if peer is verified
      */
     fun isPeerVerified(peerID: String): Boolean {

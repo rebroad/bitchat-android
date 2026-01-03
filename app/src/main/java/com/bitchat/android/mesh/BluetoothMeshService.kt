@@ -618,6 +618,13 @@ class BluetoothMeshService(private val context: Context) {
     }
     
     /**
+     * Get all connected peers (for API access)
+     */
+    fun getConnectedPeers(): List<PeerInfo> {
+        return peerManager.getAllActivePeers().values.toList()
+    }
+
+    /**
      * Stop all mesh services
      */
     fun stopServices() {
