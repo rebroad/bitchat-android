@@ -361,6 +361,9 @@ class LocationChannelManager private constructor(private val context: Context) {
                         )
                     } else {
                         // For older versions, fall back to one-shot requestSingleUpdate
+                        // Note: requestSingleUpdate is deprecated in API 31+, but this code path
+                        // only runs on API < 30, so the deprecation doesn't apply here
+                        @Suppress("DEPRECATION")
                         locationManager.requestSingleUpdate(
                             provider,
                             oneShotLocationListener,

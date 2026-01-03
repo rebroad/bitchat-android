@@ -74,7 +74,6 @@ object AudioWaveformExtractor {
         val bins = FloatArray(desiredBins) { 0f }
         val counts = IntArray(desiredBins) { 0 }
 
-        val inBuffers = codec.inputBuffers
         val outInfo = MediaCodec.BufferInfo()
 
         var sawEOS = false
@@ -82,7 +81,7 @@ object AudioWaveformExtractor {
             // Queue input
             val inIndex = codec.dequeueInputBuffer(10_000)
             if (inIndex >= 0) {
-                val buffer = codec.getInputBuffer(inIndex) ?: inBuffers[inIndex]
+                val buffer = codec.getInputBuffer(inIndex) ?: continue
                 val sampleSize = extractor.readSampleData(buffer, 0)
                 if (sampleSize < 0) {
                     codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
