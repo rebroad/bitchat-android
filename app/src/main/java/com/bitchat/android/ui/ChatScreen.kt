@@ -392,6 +392,38 @@ fun ChatScreen(viewModel: ChatViewModel) {
         )
     }
 
+    // Connect 4 color selection dialog
+    showConnect4ColorSelection?.let { peerID ->
+        val opponentColor = viewModel.getConnect4OpponentPreferredColor(peerID)
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.showConnect4ColorSelection(null)
+            },
+            title = {
+                Text("Choose Your Color")
+            },
+            text = {
+                com.bitchat.android.games.Connect4ColorSelection(
+                    opponentColor = opponentColor,
+                    onColorSelected = { color ->
+                        if (opponentColor != null) {
+                            // We received an invite, accept it
+                            viewModel.acceptConnect4Invite(peerID, color)
+                        } else {
+                            // We're sending an invite
+                            viewModel.sendConnect4Invite(peerID, color)
+                        }
+                    },
+                    onCancel = {
+                        viewModel.showConnect4ColorSelection(null)
+                    }
+                )
+            },
+            confirmButton = {},
+            dismissButton = {}
+        )
+    }
+
     // Dialogs and Sheets
     ChatDialogs(
         showPasswordDialog = showPasswordDialog,
