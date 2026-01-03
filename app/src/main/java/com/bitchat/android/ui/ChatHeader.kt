@@ -382,6 +382,7 @@ private fun PrivateChatHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                @Suppress("DEPRECATION")
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
@@ -472,6 +473,7 @@ private fun ChannelHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                @Suppress("DEPRECATION")
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),

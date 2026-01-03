@@ -3,6 +3,7 @@ package com.bitchat.android.nostr
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
+import com.google.gson.reflect.TypeToken
 import java.security.MessageDigest
 
 /**
@@ -25,12 +26,24 @@ data class NostrEvent(
          */
         fun fromJson(json: Map<String, Any>): NostrEvent? {
             return try {
+                val tagsRaw = json["tags"]
+                val tags = if (tagsRaw is List<*>) {
+                    @Suppress("UNCHECKED_CAST")
+                    tagsRaw.mapNotNull { tag ->
+                        if (tag is List<*>) {
+                            @Suppress("UNCHECKED_CAST")
+                            tag.mapNotNull { it as? String }
+                        } else null
+                    }
+                } else {
+                    return null
+                }
                 NostrEvent(
                     id = json["id"] as? String ?: "",
                     pubkey = json["pubkey"] as? String ?: return null,
                     createdAt = (json["created_at"] as? Number)?.toInt() ?: return null,
                     kind = (json["kind"] as? Number)?.toInt() ?: return null,
-                    tags = (json["tags"] as? List<List<String>>) ?: return null,
+                    tags = tags,
                     content = json["content"] as? String ?: return null,
                     sig = json["sig"] as? String?
                 )

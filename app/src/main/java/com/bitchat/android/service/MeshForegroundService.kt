@@ -146,6 +146,7 @@ class MeshForegroundService : Service() {
                 // Stop FGS and mesh cleanly
                 try { meshService?.stopServices() } catch (_: Exception) { }
                 try { MeshServiceHolder.clear() } catch (_: Exception) { }
+                @Suppress("DEPRECATION")
                 try { stopForeground(true) } catch (_: Exception) { }
                 notificationManager.cancel(NOTIFICATION_ID)
                 isInForeground = false
@@ -156,6 +157,7 @@ class MeshForegroundService : Service() {
                 isShuttingDown = true
                 updateJob?.cancel()
                 updateJob = null
+                @Suppress("DEPRECATION")
                 try { stopForeground(true) } catch (_: Exception) { }
                 notificationManager.cancel(NOTIFICATION_ID)
                 isInForeground = false
@@ -165,7 +167,8 @@ class MeshForegroundService : Service() {
                     mesh = meshService,
                     notificationManager = notificationManager,
                     stopForeground = {
-                        try { stopForeground(true) } catch (_: Exception) { }
+                        @Suppress("DEPRECATION")
+                try { stopForeground(true) } catch (_: Exception) { }
                         isInForeground = false
                     },
                     stopService = { stopSelf() }
@@ -208,6 +211,7 @@ class MeshForegroundService : Service() {
                     } else {
                         // If disabled or perms missing, ensure we are not in foreground and clear notif
                         if (isInForeground) {
+                            @Suppress("DEPRECATION")
                             try { stopForeground(false) } catch (_: Exception) { }
                             isInForeground = false
                         }
@@ -243,6 +247,7 @@ class MeshForegroundService : Service() {
             notificationManager.notify(NOTIFICATION_ID, notification)
         } else if (force) {
             // If disabled and forced, make sure to remove any prior foreground state
+            @Suppress("DEPRECATION")
             try { stopForeground(false) } catch (_: Exception) { }
             notificationManager.cancel(NOTIFICATION_ID)
             isInForeground = false
@@ -333,6 +338,7 @@ class MeshForegroundService : Service() {
         try { serviceJob.cancel() } catch (_: Exception) { }
         // Best-effort ensure we are not marked foreground
         if (isInForeground) {
+            @Suppress("DEPRECATION")
             try { stopForeground(true) } catch (_: Exception) { }
             isInForeground = false
         }

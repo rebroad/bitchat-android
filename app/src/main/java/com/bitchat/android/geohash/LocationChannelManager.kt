@@ -14,6 +14,7 @@ import kotlinx.coroutines.*
 import java.util.*
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -568,7 +569,8 @@ class LocationChannelManager private constructor(private val context: Context) {
         try {
             val channelData = dataManager?.loadLastGeohashChannel()
             if (channelData != null) {
-                val channelMap = gson.fromJson(channelData, Map::class.java) as? Map<String, Any>
+                val type = object : TypeToken<Map<String, Any>>() {}.type
+                val channelMap = gson.fromJson<Map<String, Any>>(channelData, type)
                 if (channelMap != null) {
                     val channel = when (channelMap["type"] as? String) {
                         "mesh" -> ChannelID.Mesh

@@ -76,6 +76,7 @@ fun BitchatTheme(
                     View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 } else 0
             }
+            @Suppress("DEPRECATION")
             window.navigationBarColor = colorScheme.background.toArgb()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false

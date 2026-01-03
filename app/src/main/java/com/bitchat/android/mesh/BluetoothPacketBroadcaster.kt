@@ -390,7 +390,9 @@ class BluetoothPacketBroadcaster(
     ): Boolean {
         return try {
             characteristic?.let { char ->
+                @Suppress("DEPRECATION")
                 char.value = data
+                @Suppress("DEPRECATION")
                 val result = gattServer?.notifyCharacteristicChanged(device, char, false) ?: false
                 result
             } ?: false
@@ -414,7 +416,9 @@ class BluetoothPacketBroadcaster(
     ): Boolean {
         return try {
             deviceConn.characteristic?.let { char ->
+                @Suppress("DEPRECATION")
                 char.value = data
+                @Suppress("DEPRECATION")
                 val result = deviceConn.gatt?.writeCharacteristic(char) ?: false
                 result
             } ?: false
@@ -431,6 +435,7 @@ class BluetoothPacketBroadcaster(
     /**
      * Get debug information
      */
+    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
     fun getDebugInfo(): String {
         return buildString {
             appendLine("=== Packet Broadcaster Debug Info ===")

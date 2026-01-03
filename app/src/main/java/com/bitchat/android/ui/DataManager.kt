@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.lang.reflect.Type
 import kotlin.random.Random
 
 /**
@@ -85,7 +87,8 @@ class DataManager(private val context: Context) {
         // Load channel creators
         val creatorsJson = prefs.getString("channel_creators", "{}")
         try {
-            val creatorsMap = gson.fromJson(creatorsJson, Map::class.java) as? Map<String, String>
+            val type: Type = object : TypeToken<Map<String, String>>() {}.type
+            val creatorsMap = gson.fromJson<Map<String, String>>(creatorsJson, type)
             creatorsMap?.let { _channelCreators.putAll(it) }
         } catch (e: Exception) {
             // Ignore parsing errors

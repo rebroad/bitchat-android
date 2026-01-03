@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.bitchat.android.identity
 
 import android.content.Context

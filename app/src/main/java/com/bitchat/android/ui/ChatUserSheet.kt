@@ -34,6 +34,7 @@ fun ChatUserSheet(
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
     
     // Bottom sheet state

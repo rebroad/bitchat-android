@@ -212,20 +212,6 @@ fun LocationChannelsSheet(
                                             color = standardGreen
                                         )
                                     }
-                                    null -> {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            CircularProgressIndicator(modifier = Modifier.size(12.dp))
-                                            Text(
-                                                text = stringResource(R.string.checking_permissions),
-                                                fontSize = 11.sp,
-                                                fontFamily = FontFamily.Monospace,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                    }
                                 }
                             }
                         }

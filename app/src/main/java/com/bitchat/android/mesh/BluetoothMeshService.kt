@@ -771,9 +771,10 @@ class BluetoothMeshService(private val context: Context) {
                         )
                         
                         // Encrypt the payload using Noise
-                        val encrypted = encryptionService.encrypt(noisePayload.encode(), recipientPeerID)
-                        if (encrypted == null) {
-                            Log.e(TAG, "❌ Failed to encrypt file for $recipientPeerID")
+                        val encrypted = try {
+                            encryptionService.encrypt(noisePayload.encode(), recipientPeerID)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "❌ Failed to encrypt file for $recipientPeerID: ${e.message}")
                             return@launch
                         }
                         Log.d(TAG, "🔐 Encrypted file payload: ${encrypted.size} bytes")

@@ -56,6 +56,19 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        // Show all warnings including deprecations
+        allWarningsAsErrors = true
+        freeCompilerArgs += listOf(
+            "-Xno-param-assertions",
+            "-Xno-call-assertions",
+            "-Xno-receiver-assertions"
+        )
+    }
+
+    // Enable deprecation warnings for Java
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Xlint:deprecation")
+        options.compilerArgs.add("-Werror")
     }
     buildFeatures {
         compose = true
