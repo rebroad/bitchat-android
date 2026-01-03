@@ -78,6 +78,9 @@ class ChatViewModel(
     // Media file sending manager
     private val mediaSendingManager = MediaSendingManager(state, messageManager, channelManager, meshService)
     
+    // Connect 4 game manager
+    private val connect4GameManager = com.bitchat.android.games.Connect4GameManager()
+
     // Delegate handler for mesh callbacks
     private val meshDelegateHandler = MeshDelegateHandler(
         state = state,
@@ -139,6 +142,8 @@ class ChatViewModel(
     val geohashPeople: StateFlow<List<GeoPerson>> = state.geohashPeople
     val teleportedGeo: StateFlow<Set<String>> = state.teleportedGeo
     val geohashParticipantCounts: StateFlow<Map<String, Int>> = state.geohashParticipantCounts
+    val connect4Games: StateFlow<Map<String, com.bitchat.android.games.Connect4Game>> = state.connect4Games
+    val showConnect4Game: StateFlow<String?> = state.showConnect4Game
 
     init {
         // Note: Mesh service delegate is now set by MainActivity
@@ -726,6 +731,21 @@ class ChatViewModel(
     // MARK: - BluetoothMeshDelegate Implementation (delegated)
     
     override fun didReceiveMessage(message: BitchatMessage) {
+        // Check for Connect 4 game moves before processing normally
+        if (message.isPrivate && message.senderPeerID != null) {
+            val senderPeerID = message.senderPeerID!!
+            if (connect4GameManager.isGameMove(message.content)) {
+                val column = connect4GameManager.parseMove(message.content)
+                if (column != null) {
+                    val newGame = connect4GameManager.applyOpponentMove(senderPeerID, column)
+                    if (newGame != null) {
+                        state.setConnect4Game(senderPeerID, newGame)
+                        Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+                    }
+                }
+            }
+        }
+
         meshDelegateHandler.didReceiveMessage(message)
     }
     
@@ -759,6 +779,82 @@ class ChatViewModel(
     
     // registerPeerPublicKey REMOVED - fingerprints now handled centrally in PeerManager
     
+    // MARK: - Connect 4 Game Management
+
+    /**
+     * Start a new Connect 4 game with a peer
+     */
+    fun startConnect4Game(peerID: String, iAmRed: Boolean = true) {
+        val game = connect4GameManager.startGame(peerID, iAmRed)
+        state.setConnect4Game(peerID, game)
+        state.setShowConnect4Game(peerID)
+        Log.d(TAG, "Started Connect 4 game with $peerID")
+    }
+
+    /**
+     * Make a move in the Connect 4 game
+     */
+    fun makeConnect4Move(peerID: String, column: Int) {
+        val game = connect4GameManager.getGame(peerID) ?: return
+        val myPiece = connect4GameManager.getMyPiece(peerID) ?: return
+
+        // Check if it's my turn
+        if (game.currentPlayer != myPiece || game.isGameOver) {
+            Log.w(TAG, "Not my turn or game is over")
+            return
+        }
+
+        // Apply move locally
+        val newGame = connect4GameManager.applyMyMove(peerID, column)
+        if (newGame != null) {
+            state.setConnect4Game(peerID, newGame)
+
+            // Send move to opponent
+            val moveMessage = connect4GameManager.formatMove(column)
+            val recipientNickname = meshService.getPeerNicknames()[peerID]
+            privateChatManager.sendPrivateMessage(
+                moveMessage,
+                peerID,
+                recipientNickname,
+                state.getNicknameValue(),
+                meshService.myPeerID
+            ) { messageContent, peerIDParam, recipientNicknameParam, messageId ->
+                val router = com.bitchat.android.services.MessageRouter.getInstance(getApplication(), meshService)
+                router.sendPrivate(messageContent, peerIDParam, recipientNicknameParam, messageId)
+            }
+        }
+    }
+
+    /**
+     * Show/hide Connect 4 game UI
+     */
+    fun showConnect4Game(peerID: String?) {
+        state.setShowConnect4Game(peerID)
+    }
+
+    /**
+     * End Connect 4 game
+     */
+    fun endConnect4Game(peerID: String) {
+        connect4GameManager.endGame(peerID)
+        state.setConnect4Game(peerID, null)
+        state.setShowConnect4Game(null)
+    }
+
+    /**
+     * Get which piece I am playing as in a game
+     */
+    fun getConnect4MyPiece(peerID: String): com.bitchat.android.games.Piece? {
+        return connect4GameManager.getMyPiece(peerID)
+    }
+
+    /**
+     * Check if there's an active game for a peer
+     */
+    fun hasConnect4Game(peerID: String): Boolean {
+        return connect4GameManager.hasActiveGame(peerID)
+    }
+
     // MARK: - Emergency Clear
     
     fun panicClearAllData() {

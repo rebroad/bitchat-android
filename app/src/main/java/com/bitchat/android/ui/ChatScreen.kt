@@ -57,6 +57,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val showMentionSuggestions by viewModel.showMentionSuggestions.collectAsStateWithLifecycle()
     val mentionSuggestions by viewModel.mentionSuggestions.collectAsStateWithLifecycle()
     val showAppInfo by viewModel.showAppInfo.collectAsStateWithLifecycle()
+    val connect4Games by viewModel.connect4Games.collectAsStateWithLifecycle()
+    val showConnect4Game by viewModel.showConnect4Game.collectAsStateWithLifecycle()
 
     var messageText by remember { mutableStateOf(TextFieldValue("")) }
     var showPasswordPrompt by remember { mutableStateOf(false) }
@@ -127,6 +129,54 @@ fun ChatScreen(viewModel: ChatViewModel) {
                     .windowInsetsPadding(WindowInsets.statusBars)
                     .height(headerHeight)
             )
+
+            // Connect 4 game UI (if active for this private chat)
+            selectedPrivatePeer?.let { peerID ->
+                val currentGame = if (showConnect4Game == peerID) {
+                    connect4Games[peerID]
+                } else {
+                    null
+                }
+
+                if (currentGame != null) {
+                    val myPiece = viewModel.getConnect4MyPiece(peerID)
+                    if (myPiece != null) {
+                        com.bitchat.android.games.Connect4Screen(
+                            game = currentGame,
+                            myPiece = myPiece,
+                            onMove = { column ->
+                                viewModel.makeConnect4Move(peerID, column)
+                            },
+                            onNewGame = {
+                                viewModel.startConnect4Game(peerID, myPiece == com.bitchat.android.games.Piece.RED)
+                            },
+                            onClose = {
+                                viewModel.showConnect4Game(null)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                } else if (!viewModel.hasConnect4Game(peerID)) {
+                    // Show "Start Game" button when no game is active
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.startConnect4Game(peerID, true)
+                            }
+                        ) {
+                            Text("Start Connect 4 Game")
+                        }
+                    }
+                }
+            }
 
             // Messages area - takes up available space, will compress when keyboard appears
             MessagesList(

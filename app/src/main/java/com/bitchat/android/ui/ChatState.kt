@@ -141,6 +141,12 @@ class ChatState(
     private val _geohashParticipantCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
     val geohashParticipantCounts: StateFlow<Map<String, Int>> = _geohashParticipantCounts.asStateFlow()
     
+    // Connect 4 game state (per peer)
+    private val _connect4Games = MutableStateFlow<Map<String, com.bitchat.android.games.Connect4Game>>(emptyMap())
+    val connect4Games: StateFlow<Map<String, com.bitchat.android.games.Connect4Game>> = _connect4Games.asStateFlow()
+
+    private val _showConnect4Game = MutableStateFlow<String?>(null) // peerID if game is shown
+    val showConnect4Game: StateFlow<String?> = _showConnect4Game.asStateFlow()
 
     val hasUnreadChannels: StateFlow<Boolean> = _unreadChannelMessages
         .map { unreadMap -> unreadMap.values.any { it > 0 } }
@@ -323,4 +329,20 @@ class ChatState(
         _geohashParticipantCounts.value = counts
     }
 
+    // Connect 4 game state methods
+    fun getConnect4GamesValue() = _connect4Games.value
+    fun setConnect4Game(peerID: String, game: com.bitchat.android.games.Connect4Game?) {
+        val current = _connect4Games.value.toMutableMap()
+        if (game != null) {
+            current[peerID] = game
+        } else {
+            current.remove(peerID)
+        }
+        _connect4Games.value = current
+    }
+
+    fun getShowConnect4GameValue() = _showConnect4Game.value
+    fun setShowConnect4Game(peerID: String?) {
+        _showConnect4Game.value = peerID
+    }
 }
