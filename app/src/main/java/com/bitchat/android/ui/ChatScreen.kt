@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
@@ -161,6 +162,45 @@ fun ChatScreen(viewModel: ChatViewModel) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     }
+                } else if (viewModel.getConnect4SetupState(peerID) == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_RECEIVED) {
+                    // Show Accept/Decline buttons when we received an invite
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .background(colorScheme.surfaceVariant.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "Connect 4 Game Invitation",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    viewModel.acceptConnect4InviteRequest(peerID)
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Accept")
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.declineConnect4Invite(peerID)
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Decline")
+                            }
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 } else if (!viewModel.hasConnect4Game(peerID) && !viewModel.hasPendingConnect4Setup(peerID)) {
                     // Show "Start Game" button when no game is active
                     Row(

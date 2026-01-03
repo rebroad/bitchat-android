@@ -798,7 +798,10 @@ class ChatViewModel(
             }
         }
 
-        meshDelegateHandler.didReceiveMessage(message)
+        // Don't pass game messages to the handler (they're handled above and shouldn't appear in chat)
+        if (!connect4GameManager.isGameMessage(message.content)) {
+            meshDelegateHandler.didReceiveMessage(message)
+        }
     }
     
     override fun didUpdatePeerList(peers: List<String>) {

@@ -371,22 +371,32 @@ class BluetoothMeshService(private val context: Context) {
             
             // Callbacks
             override fun onMessageReceived(message: BitchatMessage) {
+                // Filter out game messages - they shouldn't appear in chat
+                val isGameMessage = message.content.startsWith("connect4_move:") ||
+                                    message.content.startsWith("connect4_invite:") ||
+                                    message.content.startsWith("connect4_accept:") ||
+                                    message.content.startsWith("connect4_start:") ||
+                                    message.content.startsWith("connect4_decline:")
+
                 // Always reflect into process-wide store so UI can hydrate after recreation
-                try {
-                    when {
-                        message.isPrivate -> {
-                            val peer = message.senderPeerID ?: ""
-                            if (peer.isNotEmpty()) com.bitchat.android.services.AppStateStore.addPrivateMessage(peer, message)
+                // BUT skip game messages - they're handled by game logic, not chat
+                if (!isGameMessage) {
+                    try {
+                        when {
+                            message.isPrivate -> {
+                                val peer = message.senderPeerID ?: ""
+                                if (peer.isNotEmpty()) com.bitchat.android.services.AppStateStore.addPrivateMessage(peer, message)
+                            }
+                            message.channel != null -> {
+                                com.bitchat.android.services.AppStateStore.addChannelMessage(message.channel!!, message)
+                            }
+                            else -> {
+                                com.bitchat.android.services.AppStateStore.addPublicMessage(message)
+                            }
                         }
-                        message.channel != null -> {
-                            com.bitchat.android.services.AppStateStore.addChannelMessage(message.channel!!, message)
-                        }
-                        else -> {
-                            com.bitchat.android.services.AppStateStore.addPublicMessage(message)
-                        }
-                    }
-                } catch (_: Exception) { }
-                // And forward to UI delegate if attached
+                    } catch (_: Exception) { }
+                }
+                // And forward to UI delegate if attached (even game messages, so game logic can process them)
                 delegate?.didReceiveMessage(message)
 
                 // If no UI delegate attached (app closed), show DM notification via service manager
