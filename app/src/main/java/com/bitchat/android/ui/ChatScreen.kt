@@ -59,6 +59,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val showAppInfo by viewModel.showAppInfo.collectAsStateWithLifecycle()
     val connect4Games by viewModel.connect4Games.collectAsStateWithLifecycle()
     val showConnect4Game by viewModel.showConnect4Game.collectAsStateWithLifecycle()
+    val showConnect4ColorSelection by viewModel.showConnect4ColorSelection.collectAsStateWithLifecycle()
 
     var messageText by remember { mutableStateOf(TextFieldValue("")) }
     var showPasswordPrompt by remember { mutableStateOf(false) }
@@ -148,7 +149,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                                 viewModel.makeConnect4Move(peerID, column)
                             },
                             onNewGame = {
-                                viewModel.startConnect4Game(peerID, myPiece == com.bitchat.android.games.Piece.RED)
+                                viewModel.showConnect4ColorSelection(peerID)
                             },
                             onClose = {
                                 viewModel.showConnect4Game(null)
@@ -159,7 +160,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     }
-                } else if (!viewModel.hasConnect4Game(peerID)) {
+                } else if (!viewModel.hasConnect4Game(peerID) && !viewModel.hasPendingConnect4Setup(peerID)) {
                     // Show "Start Game" button when no game is active
                     Row(
                         modifier = Modifier
@@ -169,7 +170,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                     ) {
                         Button(
                             onClick = {
-                                viewModel.startConnect4Game(peerID, true)
+                                viewModel.showConnect4ColorSelection(peerID)
                             }
                         ) {
                             Text("Start Connect 4 Game")

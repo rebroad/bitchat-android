@@ -148,6 +148,9 @@ class ChatState(
     private val _showConnect4Game = MutableStateFlow<String?>(null) // peerID if game is shown
     val showConnect4Game: StateFlow<String?> = _showConnect4Game.asStateFlow()
 
+    private val _showConnect4ColorSelection = MutableStateFlow<String?>(null) // peerID if color selection is shown
+    val showConnect4ColorSelection: StateFlow<String?> = _showConnect4ColorSelection.asStateFlow()
+
     val hasUnreadChannels: StateFlow<Boolean> = _unreadChannelMessages
         .map { unreadMap -> unreadMap.values.any { it > 0 } }
         .stateIn(
@@ -344,5 +347,10 @@ class ChatState(
     fun getShowConnect4GameValue() = _showConnect4Game.value
     fun setShowConnect4Game(peerID: String?) {
         _showConnect4Game.value = peerID
+    }
+
+    fun getShowConnect4ColorSelectionValue() = _showConnect4ColorSelection.value
+    fun setShowConnect4ColorSelection(peerID: String?) {
+        _showConnect4ColorSelection.value = peerID
     }
 }

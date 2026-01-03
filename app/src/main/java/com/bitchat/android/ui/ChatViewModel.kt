@@ -144,6 +144,7 @@ class ChatViewModel(
     val geohashParticipantCounts: StateFlow<Map<String, Int>> = state.geohashParticipantCounts
     val connect4Games: StateFlow<Map<String, com.bitchat.android.games.Connect4Game>> = state.connect4Games
     val showConnect4Game: StateFlow<String?> = state.showConnect4Game
+    val showConnect4ColorSelection: StateFlow<String?> = state.showConnect4ColorSelection
 
     init {
         // Note: Mesh service delegate is now set by MainActivity
@@ -731,16 +732,62 @@ class ChatViewModel(
     // MARK: - BluetoothMeshDelegate Implementation (delegated)
     
     override fun didReceiveMessage(message: BitchatMessage) {
-        // Check for Connect 4 game moves before processing normally
+        // Check for Connect 4 game messages before processing normally
         if (message.isPrivate && message.senderPeerID != null) {
             val senderPeerID = message.senderPeerID!!
-            if (connect4GameManager.isGameMove(message.content)) {
-                val column = connect4GameManager.parseMove(message.content)
-                if (column != null) {
-                    val newGame = connect4GameManager.applyOpponentMove(senderPeerID, column)
-                    if (newGame != null) {
-                        state.setConnect4Game(senderPeerID, newGame)
-                        Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+            val content = message.content
+
+            when {
+                connect4GameManager.isGameMove(content) -> {
+                    // Game move
+                    val column = connect4GameManager.parseMove(content)
+                    if (column != null) {
+                        val newGame = connect4GameManager.applyOpponentMove(senderPeerID, column)
+                        if (newGame != null) {
+                            state.setConnect4Game(senderPeerID, newGame)
+                            Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+                        }
+                    }
+                }
+                content.startsWith("connect4_invite:") -> {
+                    // Game invite
+                    val parsed = connect4GameManager.parseInvite(content)
+                    if (parsed != null) {
+                        connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
+                        state.setShowConnect4ColorSelection(senderPeerID)
+                        Log.d(TAG, "Received Connect 4 invite from $senderPeerID")
+                    }
+                }
+                content.startsWith("connect4_accept:") -> {
+                    // Accept invite
+                    val parsed = connect4GameManager.parseAccept(content)
+                    if (parsed != null) {
+                        val startMessage = connect4GameManager.handleAccept(senderPeerID, parsed.first, parsed.second)
+                        if (startMessage != null) {
+                            // Send start message and initialize game
+                            sendGameMessage(senderPeerID, startMessage)
+                            val game = connect4GameManager.getGame(senderPeerID)
+                            if (game != null) {
+                                state.setConnect4Game(senderPeerID, game)
+                                state.setShowConnect4Game(senderPeerID)
+                                state.setShowConnect4ColorSelection(null)
+                            }
+                            Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
+                        }
+                    }
+                }
+                content.startsWith("connect4_start:") -> {
+                    // Start game (after we accepted)
+                    val parsed = connect4GameManager.parseStart(content)
+                    if (parsed != null) {
+                        connect4GameManager.handleStart(senderPeerID, parsed.first, parsed.second, parsed.third)
+                        val game = connect4GameManager.getGame(senderPeerID)
+                        if (game != null) {
+                            state.setConnect4Game(senderPeerID, game)
+                            state.setShowConnect4Game(senderPeerID)
+                            state.setShowConnect4ColorSelection(null)
+                            Log.d(TAG, "Game started with $senderPeerID")
+                        }
                     }
                 }
             }
@@ -782,13 +829,43 @@ class ChatViewModel(
     // MARK: - Connect 4 Game Management
 
     /**
-     * Start a new Connect 4 game with a peer
+     * Send a game invite to a peer
      */
-    fun startConnect4Game(peerID: String, iAmRed: Boolean = true) {
-        val game = connect4GameManager.startGame(peerID, iAmRed)
-        state.setConnect4Game(peerID, game)
-        state.setShowConnect4Game(peerID)
-        Log.d(TAG, "Started Connect 4 game with $peerID")
+    fun sendConnect4Invite(peerID: String, preferredColor: com.bitchat.android.games.Piece) {
+        val inviteMessage = connect4GameManager.sendInvite(peerID, preferredColor)
+        sendGameMessage(peerID, inviteMessage)
+        state.setShowConnect4ColorSelection(null) // Close color selection dialog
+        Log.d(TAG, "Sent Connect 4 invite to $peerID with color ${preferredColor.name}")
+    }
+
+    /**
+     * Accept an invite with preferred color
+     */
+    fun acceptConnect4Invite(peerID: String, preferredColor: com.bitchat.android.games.Piece) {
+        val acceptMessage = connect4GameManager.acceptInvite(peerID, preferredColor)
+        if (acceptMessage != null) {
+            sendGameMessage(peerID, acceptMessage)
+            Log.d(TAG, "Accepted Connect 4 invite from $peerID with color ${preferredColor.name}")
+        } else {
+            Log.w(TAG, "Failed to accept invite (color conflict or invalid state)")
+        }
+    }
+
+    /**
+     * Send a game-related message
+     */
+    private fun sendGameMessage(peerID: String, message: String) {
+        val recipientNickname = meshService.getPeerNicknames()[peerID]
+        privateChatManager.sendPrivateMessage(
+            message,
+            peerID,
+            recipientNickname,
+            state.getNicknameValue(),
+            meshService.myPeerID
+        ) { messageContent, peerIDParam, recipientNicknameParam, messageId ->
+            val router = com.bitchat.android.services.MessageRouter.getInstance(getApplication(), meshService)
+            router.sendPrivate(messageContent, peerIDParam, recipientNicknameParam, messageId)
+        }
     }
 
     /**
@@ -853,6 +930,42 @@ class ChatViewModel(
      */
     fun hasConnect4Game(peerID: String): Boolean {
         return connect4GameManager.hasActiveGame(peerID)
+    }
+
+    /**
+     * Get game setup state for a peer
+     */
+    fun getConnect4SetupState(peerID: String): com.bitchat.android.games.Connect4GameManager.GameSetupState {
+        return connect4GameManager.getGameSetupState(peerID)
+    }
+
+    /**
+     * Get opponent's preferred color from invite
+     */
+    fun getConnect4OpponentPreferredColor(peerID: String): com.bitchat.android.games.Piece? {
+        return connect4GameManager.getOpponentPreferredColor(peerID)
+    }
+
+    /**
+     * Show/hide color selection dialog
+     */
+    fun showConnect4ColorSelection(peerID: String?) {
+        state.setShowConnect4ColorSelection(peerID)
+    }
+
+    /**
+     * Decline an invite
+     */
+    fun declineConnect4Invite(peerID: String) {
+        connect4GameManager.declineInvite(peerID)
+        state.setShowConnect4ColorSelection(null)
+    }
+
+    /**
+     * Check if there's pending setup (invite/accept in progress)
+     */
+    fun hasPendingConnect4Setup(peerID: String): Boolean {
+        return connect4GameManager.hasPendingSetup(peerID)
     }
 
     // MARK: - Emergency Clear
