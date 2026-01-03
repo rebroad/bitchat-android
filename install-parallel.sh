@@ -64,15 +64,11 @@ FAILED=0
 for i in "${!PIDS[@]}"; do
     device="${DEVICE_ARRAY[$i]}"
     model="${MODELS[$i]}"
-    echo "Waiting for installation on $model ($device)..."
     wait ${PIDS[$i]}
     exit_code=$?
     EXIT_CODES+=($exit_code)
     if [ $exit_code -ne 0 ]; then
         FAILED=1
-        echo "✗ Installation failed on $model ($device)"
-    else
-        echo "✓ Installation succeeded on $model ($device)"
     fi
 done
 
