@@ -127,3 +127,40 @@ dependencies {
     androidTestImplementation(libs.bundles.compose.testing)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+// Add error handling for install tasks to show cleaner error messages
+gradle.buildFinished {
+    val buildResult = this
+    if (buildResult.failure != null) {
+        val failure = buildResult.failure
+        var errorText = ""
+
+        // Collect error message from exception chain
+        var current: Throwable? = failure
+        while (current != null) {
+            errorText += (current.message ?: "") + "\n"
+            current = current.cause
+        }
+
+        // Check if this is a signature mismatch error
+        if (errorText.contains("INSTALL_FAILED_UPDATE_INCOMPATIBLE") ||
+            errorText.contains("signatures do not match")) {
+
+            println("\n" + "=".repeat(70))
+            println("⚠️  INSTALLATION FAILED: Signature Mismatch")
+            println("=".repeat(70))
+            println()
+            println("The app is already installed with a different signature.")
+            println("This usually happens when:")
+            println("  • Installing a debug build over a release build")
+            println("  • Installing from a different development machine")
+            println("  • Installing over a Play Store version")
+            println()
+            println("Solution:")
+            println("  Run: adb uninstall com.bitchat.droid")
+            println("  Then: ./gradlew installDebug")
+            println()
+            println("=".repeat(70))
+        }
+    }
+}

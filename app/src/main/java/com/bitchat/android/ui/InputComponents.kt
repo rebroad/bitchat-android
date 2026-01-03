@@ -179,8 +179,8 @@ fun MessageInput(
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     var isRecording by remember { mutableStateOf(false) }
-    var elapsedMs by remember { mutableStateOf(0L) }
-    var amplitude by remember { mutableStateOf(0) }
+    var elapsedMs by remember { mutableLongStateOf(0L) }
+    var amplitude by remember { mutableIntStateOf(0) }
 
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp), // Reduced padding

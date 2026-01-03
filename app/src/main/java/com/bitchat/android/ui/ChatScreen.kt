@@ -69,7 +69,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var selectedMessageForSheet by remember { mutableStateOf<BitchatMessage?>(null) }
     var showFullScreenImageViewer by remember { mutableStateOf(false) }
     var viewerImagePaths by remember { mutableStateOf(emptyList<String>()) }
-    var initialViewerIndex by remember { mutableStateOf(0) }
+    var initialViewerIndex by remember { mutableIntStateOf(0) }
     var forceScrollToBottom by remember { mutableStateOf(false) }
     var isScrolledUp by remember { mutableStateOf(false) }
 

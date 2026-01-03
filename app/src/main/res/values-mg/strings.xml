@@ -200,7 +200,7 @@
     <string name="location_permission_denied">nolavina ny alalana momba ny toerana. alefaso ao amin\'ny fametrahana mba hampiasa fantsona toerana.</string>
     <string name="open_settings">Hanokatra fametrahana</string>
     <string name="location_permission_granted">\u2713 omena ny alalana momba ny toerana</string>
-    <string name="checking_permissions">manamarina ny alalana...</string>
+    <string name="checking_permissions">manamarina ny alalana…</string>
     <string name="finding_nearby_channels">mitady fantsona akaiky…</string>
     <string name="bookmarked">voaisy bookmark</string>
     <string name="geohash_placeholder">geohash</string>
@@ -260,14 +260,14 @@
     <string name="check_again">Hanamarina Indray</string>
     <string name="location_services_unavailable">Tsy Misy Sampan-draharaham-pitoerana</string>
     <string name="location_unavailable_explanation">Tsy misy sampan-draharaham-pitoerana amin\'ity fitaovana ity. Mahagaga izany satria mahazatra amin\'ny fitaovana Android ny sampan-draharaham-pitoerana.\n\nMila sampan-draharaham-pitoerana ny bitchat mba hiasa tsara ny scan Bluetooth (takiana Android). Raha tsy izany, ny fampiharana dia tsy afaka mahita mpampiasa akaiky.</string>
-    <string name="checking_location_services">Manamarina sampan-draharaham-pitoerana...</string>
+    <string name="checking_location_services">Manamarina sampan-draharaham-pitoerana…</string>
     <string name="bluetooth_required">Ilaina ny Bluetooth</string>
     <string name="bluetooth_needs_for">Mila Bluetooth ny bitchat mba:</string>
     <string name="bluetooth_needs_bullets">• Hahita mpampiasa akaiky\n• Hamorona fifandraisana tambazotry mesh\n• Handefa sy handray hafatra\n• Hiasa tsy misy Internet na mpizara</string>
     <string name="enable_bluetooth">Alefaso ny Bluetooth</string>
     <string name="bluetooth_not_supported">Tsy Tohanana ny Bluetooth</string>
     <string name="bluetooth_unsupported_explanation">Ity fitaovana ity dia tsy manohana ny Bluetooth Low Energy (BLE), izay ilaina mba hiasan\'ny bitchat.\n\nMila BLE ny bitchat mba hamoronana tambazotry mesh sy hifandray amin\'ny fitaovana akaiky tsy misy Internet.</string>
-    <string name="checking_bluetooth_status">Manamarina ny toe-javatra Bluetooth...</string>
+    <string name="checking_bluetooth_status">Manamarina ny toe-javatra Bluetooth…</string>
     <string name="battery_optimization_detected_title">hita ny fanamafisana bateria</string>
     <string name="battery_optimization_enabled_title">Alefa ny Fanamafisana Bateria</string>
     <string name="battery_optimization_explanation_short">Mila mihazakazaka ao ambadika ny bitchat mba hitazona ny fifandraisana mesh. ny fanamafisana bateria dia afaka manelingelina ireo fifandraisana ireo.</string>
@@ -278,7 +278,7 @@
     <string name="continue_btn">Hanohy</string>
     <string name="initializing_mesh_network">Manomboka ny tambazotry mesh</string>
     <string name="dot">.</string>
-    <string name="setting_up_bluetooth">Mametraka ny tambazotry mesh Bluetooth...</string>
+    <string name="setting_up_bluetooth">Mametraka ny tambazotry mesh Bluetooth…</string>
     <string name="should_take_seconds">Tokony haharitra segaondra vitsivitsy ihany izany</string>
     <string name="warning_emoji">⚠️</string>
     <string name="setup_not_complete">Tsy Vita ny Fametrahana</string>
@@ -292,11 +292,11 @@
     <string name="app_brand">bitchat/</string>
     <string name="channel_count_prefix"> · ⧉ </string>
     <string name="geohash_people_header">OLONA</string>
-    <string name="nobody_around">tsy misy olona manodidina...</string>
+    <string name="nobody_around">tsy misy olona manodidina…</string>
     <string name="you_suffix"> (ianao)</string>
     <string name="pan_zoom_instruction">ahetsika sy ataovy lehibe mba hifidianana geohash</string>
     <string name="select">hifidy</string>
-    <string name="type_a_message_placeholder">soraty hafatra...</string>
+    <string name="type_a_message_placeholder">soraty hafatra…</string>
     <string name="mention_suggestion_at">@%1$s</string>
     <string name="mention">hanonona</string>
     <string name="image_counter">%1$d / %2$d</string>
@@ -337,7 +337,7 @@
     <string name="cd_mining_pow">Mihaingam-poana PoW</string>
     <string name="cd_pow_enabled">Alefa ny PoW</string>
     <string name="cd_proof_of_work">Porofo Asa</string>
-    <string name="pow_mining_ellipsis">mihaingana...</string>
+    <string name="pow_mining_ellipsis">mihaingana…</string>
     <string name="pow_label_format">pow: %1$dbit</string>
 
     <!-- Famaritana alalana -->

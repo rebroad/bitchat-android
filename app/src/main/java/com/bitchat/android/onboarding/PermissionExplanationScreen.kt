@@ -33,7 +33,7 @@ import com.bitchat.android.R
  */
 @Composable
 fun PermissionExplanationScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     permissionCategories: List<PermissionCategory>,
     onContinue: () -> Unit
 ) {

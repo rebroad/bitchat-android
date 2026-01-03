@@ -22,7 +22,7 @@ import com.bitchat.android.R
  */
 @Composable
 fun BluetoothCheckScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     status: BluetoothStatus,
     onEnableBluetooth: () -> Unit,
     onRetry: () -> Unit,

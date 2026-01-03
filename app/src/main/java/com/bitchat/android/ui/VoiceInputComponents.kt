@@ -44,7 +44,7 @@ fun VoiceRecordButton(
     var isRecording by remember { mutableStateOf(false) }
     var recorder by remember { mutableStateOf<VoiceRecorder?>(null) }
     var recordedFilePath by remember { mutableStateOf<String?>(null) }
-    var recordingStart by remember { mutableStateOf(0L) }
+    var recordingStart by remember { mutableLongStateOf(0L) }
 
     val scope = rememberCoroutineScope()
     var ampJob by remember { mutableStateOf<Job?>(null) }

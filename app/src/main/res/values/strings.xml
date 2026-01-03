@@ -176,7 +176,7 @@
   <string name="cd_mining_pow">Mining PoW</string>
   <string name="cd_pow_enabled">PoW Enabled</string>
   <string name="cd_proof_of_work">Proof of Work</string>
-  <string name="pow_mining_ellipsis">mining...</string>
+  <string name="pow_mining_ellipsis">mining…</string>
   <string name="pow_label_format">pow: %1$dbit</string>
   <string name="cd_offline_mesh_chat">Offline Mesh Chat</string>
   <string name="cd_online_geohash_channels">Online Geohash Channels</string>
@@ -210,7 +210,7 @@
   <string name="location_permission_denied">location permission denied. enable in settings to use location channels.</string>
 
   <string name="location_permission_granted">\u2713 location permission granted</string>
-  <string name="checking_permissions">checking permissions...</string>
+  <string name="checking_permissions">checking permissions…</string>
   <string name="finding_nearby_channels">finding nearby channels…</string>
   <string name="bookmarked">bookmarked</string>
   <string name="geohash_placeholder">geohash</string>
@@ -286,14 +286,14 @@
   <string name="check_again">Check Again</string>
   <string name="location_services_unavailable">Location Services Unavailable</string>
   <string name="location_unavailable_explanation">Location services are not available on this device. This is unusual as location services are standard on Android devices.\n\nbitchat needs location services for Bluetooth scanning to work properly (Android requirement). Without this, the app cannot discover nearby users.</string>
-  <string name="checking_location_services">Checking location services...</string>
+  <string name="checking_location_services">Checking location services…</string>
   <string name="bluetooth_required">Bluetooth Required</string>
   <string name="bluetooth_needs_for">bitchat needs Bluetooth to:</string>
   <string name="bluetooth_needs_bullets">• Discover nearby users\n• Create mesh network connections\n• Send and receive messages\n• Work without internet or servers</string>
   <string name="enable_bluetooth">Enable Bluetooth</string>
   <string name="bluetooth_not_supported">Bluetooth Not Supported</string>
   <string name="bluetooth_unsupported_explanation">This device doesn\'t support Bluetooth Low Energy (BLE), which is required for bitchat to function.\n\nbitchat needs BLE to create mesh networks and communicate with nearby devices without internet.</string>
-  <string name="checking_bluetooth_status">Checking Bluetooth status...</string>
+  <string name="checking_bluetooth_status">Checking Bluetooth status…</string>
   <string name="battery_optimization_detected_title">battery optimization detected</string>
   <string name="battery_optimization_enabled_title">Battery Optimization Enabled</string>
   <string name="battery_optimization_explanation_short">bitchat needs to run in the background to maintain mesh connections. battery optimization can interrupt these connections.</string>
@@ -304,7 +304,7 @@
   <string name="continue_btn">Continue</string>
   <string name="initializing_mesh_network">Initializing mesh network</string>
   <string name="dot">.</string>
-  <string name="setting_up_bluetooth">Setting up Bluetooth mesh networking...</string>
+  <string name="setting_up_bluetooth">Setting up Bluetooth mesh networking…</string>
   <string name="should_take_seconds">This should only take a few seconds</string>
   <string name="warning_emoji">⚠️</string>
   <string name="setup_not_complete">Setup Not Complete</string>
@@ -319,11 +319,11 @@
   <string name="app_brand">bitchat/</string>
   <string name="channel_count_prefix"> · ⧉ </string>
   <string name="geohash_people_header">PEOPLE</string>
-  <string name="nobody_around">nobody around...</string>
+  <string name="nobody_around">nobody around…</string>
   <string name="you_suffix"> (you)</string>
   <string name="pan_zoom_instruction">pan and zoom to select a geohash</string>
   <string name="select">select</string>
-  <string name="type_a_message_placeholder">type a message...</string>
+  <string name="type_a_message_placeholder">type a message…</string>
   <string name="mention_suggestion_at">@%1$s</string>
   <string name="mention">mention</string>
   <string name="image_counter">%1$d / %2$d</string>

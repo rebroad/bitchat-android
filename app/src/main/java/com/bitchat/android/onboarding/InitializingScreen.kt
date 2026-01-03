@@ -19,7 +19,7 @@ import com.bitchat.android.R
  * Loading screen shown during app initialization after permissions are granted
  */
 @Composable
-fun InitializingScreen(modifier: Modifier) {
+fun InitializingScreen(modifier: Modifier = Modifier) {
     val colorScheme = MaterialTheme.colorScheme
     
     // Animated rotation for the loading indicator
@@ -152,7 +152,7 @@ fun InitializingScreen(modifier: Modifier) {
  */
 @Composable
 fun InitializationErrorScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     errorMessage: String,
     onRetry: () -> Unit,
     onOpenSettings: () -> Unit

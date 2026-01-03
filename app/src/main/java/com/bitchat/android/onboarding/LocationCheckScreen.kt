@@ -23,7 +23,7 @@ import com.bitchat.android.R
  */
 @Composable
 fun LocationCheckScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     status: LocationStatus,
     onEnableLocation: () -> Unit,
     onRetry: () -> Unit,

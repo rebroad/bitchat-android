@@ -30,7 +30,7 @@ fun VoiceNotePlayer(
     var isPrepared by remember { mutableStateOf(false) }
     var isError by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0f) }
-    var durationMs by remember { mutableStateOf(0) }
+    var durationMs by remember { mutableIntStateOf(0) }
     val player = remember { MediaPlayer() }
 
     // Seek function - position is a fraction from 0.0 to 1.0

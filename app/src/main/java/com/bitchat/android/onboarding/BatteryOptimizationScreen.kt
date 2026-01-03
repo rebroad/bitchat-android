@@ -28,7 +28,7 @@ import com.bitchat.android.R
 
 @Composable
 fun BatteryOptimizationScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     status: BatteryOptimizationStatus,
     onDisableBatteryOptimization: () -> Unit,
     onRetry: () -> Unit,
