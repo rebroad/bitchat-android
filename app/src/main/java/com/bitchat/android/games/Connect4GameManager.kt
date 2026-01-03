@@ -113,34 +113,60 @@ class Connect4GameManager {
         setup.opponentPreferredColor = opponentColor
         setup.opponentRandomNumber = opponentRandom
 
-        // Determine final colors (use preferences if different, otherwise assign)
-        val myColor = setup.myPreferredColor!!
-        val finalOpponentColor = if (opponentColor != myColor) opponentColor else myColor.opposite
-
         // Determine starting player based on random numbers (higher number starts)
         val myRandom = setup.myRandomNumber!!
-        val startingPlayer = if (myRandom > opponentRandom) myColor else finalOpponentColor
+        val iStartFirst = myRandom > opponentRandom
+
+        // Determine final colors
+        val myColor = setup.myPreferredColor!!
+        val finalOpponentColor = if (opponentColor != myColor) {
+            // Different colors: use preferences
+            opponentColor
+        } else {
+            // Same color: starting player gets their chosen color, other gets opposite
+            if (iStartFirst) {
+                myColor.opposite  // Opponent gets opposite of my color
+            } else {
+                opponentColor  // Opponent gets their chosen color, I'll get opposite
+            }
+        }
+
+        // If colors conflicted and opponent starts first, I get opposite of their color
+        val finalMyColor = if (opponentColor == setup.myPreferredColor && !iStartFirst) {
+            opponentColor.opposite
+        } else {
+            myColor
+        }
+
+        val startingPlayer = if (iStartFirst) finalMyColor else finalOpponentColor
 
         // Start the game
         val game = Connect4Game(currentPlayer = startingPlayer)
         activeGames[peerID] = game
-        playerPieces[peerID] = Pair(myColor, finalOpponentColor)
+        playerPieces[peerID] = Pair(finalMyColor, finalOpponentColor)
         setup.state = GameSetupState.STARTED
 
-        val message = "$START_PREFIX${myColor.name}:${finalOpponentColor.name}:${startingPlayer.name}"
-        Log.d(TAG, "Starting game with $peerID: myColor=${myColor.name}, opponentColor=${finalOpponentColor.name}, startingPlayer=${startingPlayer.name}")
+        val message = "$START_PREFIX${finalMyColor.name}:${finalOpponentColor.name}:${startingPlayer.name}"
+        Log.d(TAG, "Starting game with $peerID: myColor=${finalMyColor.name}, opponentColor=${finalOpponentColor.name}, startingPlayer=${startingPlayer.name}")
         return message
     }
 
     /**
      * Handle start message (from opponent after we accepted)
+     * Note: The colors in the message are from the initiator's perspective, so we need to swap them
      */
-    fun handleStart(peerID: String, myColor: Piece, opponentColor: Piece, startingPlayer: Piece) {
+    fun handleStart(peerID: String, initiatorColor: Piece, recipientColor: Piece, startingPlayer: Piece) {
         val setup = gameSetups[peerID] ?: return
         if (setup.state != GameSetupState.ACCEPT_SENT) {
             Log.w(TAG, "Unexpected start in state ${setup.state}")
             return
         }
+
+        // Swap colors because message is from initiator's perspective
+        // initiatorColor is what initiator calls "myColor" (their color)
+        // recipientColor is what initiator calls "opponentColor" (our color)
+        val myColor = recipientColor  // From our perspective, the recipientColor is our color
+        val opponentColor = initiatorColor  // From our perspective, the initiatorColor is opponent's color
 
         val game = Connect4Game(currentPlayer = startingPlayer)
         activeGames[peerID] = game

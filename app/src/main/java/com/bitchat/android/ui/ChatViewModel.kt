@@ -754,6 +754,8 @@ class ChatViewModel(
                     val parsed = connect4GameManager.parseInvite(content)
                     if (parsed != null) {
                         connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
+                        // Navigate to private chat and show color selection
+                        state.setSelectedPrivateChatPeer(senderPeerID)
                         state.setShowConnect4ColorSelection(senderPeerID)
                         Log.d(TAG, "Received Connect 4 invite from $senderPeerID")
                     }
