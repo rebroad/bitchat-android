@@ -31,6 +31,7 @@ fun Connect4Screen(
     onMove: (Int) -> Unit,
     onNewGame: () -> Unit,
     onClose: () -> Unit,
+    onSurrender: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isMyTurn = game.currentPlayer == myPiece && !game.isGameOver
@@ -81,13 +82,27 @@ fun Connect4Screen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // New game button (shown when game is over)
-        if (game.isGameOver) {
-            Button(
-                onClick = onNewGame,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("New Game")
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (game.isGameOver) {
+                // New game button when game is over
+                Button(
+                    onClick = onNewGame,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("New Game")
+                }
+            } else {
+                // Surrender button when game is in progress
+                OutlinedButton(
+                    onClick = onSurrender,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Surrender")
+                }
             }
         }
     }

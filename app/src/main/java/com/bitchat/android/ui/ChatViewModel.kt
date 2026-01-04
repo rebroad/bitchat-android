@@ -792,6 +792,8 @@ class ChatViewModel(
                                 state.setShowConnect4Game(senderPeerID)
                                 state.setShowConnect4ColorSelection(null)
                                 updateConnect4SetupState(senderPeerID) // Update observable state
+                                // Notify notification manager that we're viewing game UI
+                                notificationManager.setViewingGame(senderPeerID, true)
                             }
                             Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
                         }
@@ -808,6 +810,8 @@ class ChatViewModel(
                             // Auto-show game when it starts
                             if (showConnect4Game.value == null) {
                                 state.setShowConnect4Game(senderPeerID)
+                                // Notify notification manager that we're viewing game UI
+                                notificationManager.setViewingGame(senderPeerID, true)
                             }
                             state.setShowConnect4ColorSelection(null)
                             updateConnect4SetupState(senderPeerID) // Update observable state
@@ -821,6 +825,14 @@ class ChatViewModel(
                     updateConnect4SetupState(senderPeerID) // Update observable state
                     state.setShowConnect4ColorSelection(null)
                     Log.d(TAG, "Game invite declined by $senderPeerID")
+                }
+                content.startsWith("connect4_surrender:") -> {
+                    // Opponent surrendered - we win
+                    val surrenderedGame = connect4GameManager.handleSurrender(senderPeerID)
+                    if (surrenderedGame != null) {
+                        state.setConnect4Game(senderPeerID, surrenderedGame)
+                        Log.d(TAG, "Opponent $senderPeerID surrendered - we win!")
+                    }
                 }
             }
         }
@@ -946,6 +958,8 @@ class ChatViewModel(
      */
     fun showConnect4Game(peerID: String?) {
         state.setShowConnect4Game(peerID)
+        // Notify notification manager about game UI visibility
+        notificationManager.setViewingGame(peerID, peerID != null)
     }
 
     /**
@@ -955,6 +969,8 @@ class ChatViewModel(
         connect4GameManager.endGame(peerID)
         state.setConnect4Game(peerID, null)
         state.setShowConnect4Game(null)
+        // Notify notification manager that we're no longer viewing game UI
+        notificationManager.setViewingGame(peerID, false)
     }
 
     /**
@@ -1036,6 +1052,26 @@ class ChatViewModel(
         state.setConnect4Game(peerID, null)
         updateConnect4SetupState(peerID) // Update observable state
         // Don't change showConnect4Game here - let the caller handle it
+        // (Notification manager will be updated when game UI is shown/hidden)
+    }
+
+    /**
+     * Surrender the current game
+     */
+    fun surrenderConnect4Game(peerID: String) {
+        val game = connect4GameManager.getGame(peerID) ?: return
+        if (game.isGameOver) return // Already over
+
+        // Send surrender message to opponent
+        val surrenderMessage = connect4GameManager.formatSurrender()
+        sendGameMessage(peerID, surrenderMessage)
+
+        // End the game locally (opponent will handle showing they won)
+        connect4GameManager.endGame(peerID)
+        state.setConnect4Game(peerID, null)
+        // Game UI is closed, so notify notification manager
+        notificationManager.setViewingGame(peerID, false)
+        Log.d(TAG, "Surrendered game with $peerID")
     }
 
     // MARK: - Emergency Clear

@@ -155,6 +155,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
                             onClose = {
                                 viewModel.showConnect4Game(null)
                             },
+                            onSurrender = {
+                                viewModel.surrenderConnect4Game(peerID)
+                                viewModel.showConnect4Game(null)
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(8.dp)

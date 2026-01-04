@@ -14,6 +14,7 @@ class Connect4GameManager {
         private const val ACCEPT_PREFIX = "connect4_accept:"
         private const val START_PREFIX = "connect4_start:"
         private const val DECLINE_PREFIX = "connect4_decline:"
+        private const val SURRENDER_PREFIX = "connect4_surrender:"
     }
 
     enum class GameSetupState {
@@ -211,7 +212,8 @@ class Connect4GameManager {
                content.startsWith(INVITE_PREFIX) ||
                content.startsWith(ACCEPT_PREFIX) ||
                content.startsWith(START_PREFIX) ||
-               content.startsWith(DECLINE_PREFIX)
+               content.startsWith(DECLINE_PREFIX) ||
+               content.startsWith(SURRENDER_PREFIX)
     }
 
     /**
@@ -362,5 +364,31 @@ class Connect4GameManager {
         return state == GameSetupState.INVITE_SENT ||
                state == GameSetupState.INVITE_RECEIVED ||
                state == GameSetupState.ACCEPT_SENT
+    }
+
+    /**
+     * Format a surrender message
+     */
+    fun formatSurrender(): String {
+        return SURRENDER_PREFIX
+    }
+
+    /**
+     * Handle surrender from opponent (they surrendered, so we win)
+     */
+    fun handleSurrender(peerID: String): Connect4Game? {
+        val game = activeGames[peerID] ?: return null
+        val (myPiece, opponentPiece) = playerPieces[peerID] ?: return null
+
+        // Mark game as over with opponent's piece as winner (they surrendered, we win)
+        // Actually wait - if they surrendered, we win, so the winner should be our piece
+        // But we need to create a new game state with winner = our piece
+        val surrenderedGame = game.copy(
+            winner = myPiece,  // We win because opponent surrendered
+            isGameOver = true
+        )
+        activeGames[peerID] = surrenderedGame
+        Log.d(TAG, "Opponent $peerID surrendered - we win!")
+        return surrenderedGame
     }
 }
