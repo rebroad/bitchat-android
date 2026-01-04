@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
@@ -62,6 +63,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val showConnect4Game by viewModel.showConnect4Game.collectAsStateWithLifecycle()
     val showConnect4ColorSelection by viewModel.showConnect4ColorSelection.collectAsStateWithLifecycle()
     val connect4SetupStates by viewModel.connect4SetupStates.collectAsStateWithLifecycle()
+    val connect4GamesWithNewMoves by viewModel.connect4GamesWithNewMoves.collectAsStateWithLifecycle()
 
     var messageText by remember { mutableStateOf(TextFieldValue("")) }
     var showPasswordPrompt by remember { mutableStateOf(false) }
@@ -172,6 +174,17 @@ fun ChatScreen(viewModel: ChatViewModel) {
                     }
                 } else if (currentGame != null && showConnect4Game != peerID) {
                     // Game exists but is hidden - show button to return to game
+                    val hasNewMove = connect4GamesWithNewMoves.contains(peerID)
+                    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                    val alpha by infiniteTransition.animateFloat(
+                        initialValue = 0.5f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1000, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "alpha"
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -181,7 +194,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
                         Button(
                             onClick = {
                                 viewModel.showConnect4Game(peerID)
-                            }
+                            },
+                            modifier = Modifier.alpha(if (hasNewMove) alpha else 1f)
                         ) {
                             Text("Return to Connect 4 Game")
                         }

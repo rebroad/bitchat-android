@@ -146,6 +146,7 @@ class ChatViewModel(
     val showConnect4Game: StateFlow<String?> = state.showConnect4Game
     val showConnect4ColorSelection: StateFlow<String?> = state.showConnect4ColorSelection
     val connect4SetupStates: StateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>> = state.connect4SetupStates
+    val connect4GamesWithNewMoves: StateFlow<Set<String>> = state.connect4GamesWithNewMoves
 
     init {
         // Note: Mesh service delegate is now set by MainActivity
@@ -784,6 +785,23 @@ class ChatViewModel(
                             if (newGame != null) {
                                 state.setConnect4Game(senderPeerID, newGame)
                                 Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+
+                                // Show notification if game is not being displayed and user is not viewing this chat
+                                val isGameShown = state.getShowConnect4GameValue() == senderPeerID
+                                val isViewingChat = state.getSelectedPrivateChatPeerValue() == senderPeerID
+                                if (!isGameShown && !isViewingChat) {
+                                    val senderNickname = meshService.getPeerNicknames()[senderPeerID] ?: senderPeerID
+                                    notificationManager.showPrivateMessageNotification(
+                                        senderPeerID = senderPeerID,
+                                        senderNickname = senderNickname,
+                                        messageContent = "Connect 4: Move made"
+                                    )
+                                }
+
+                                // Mark that a new move was made (for pulsating button) if viewing the chat but not the game
+                                if (!isGameShown && isViewingChat) {
+                                    state.setConnect4GameHasNewMove(senderPeerID, true)
+                                }
                             }
                         }
                     }
@@ -1012,6 +1030,8 @@ class ChatViewModel(
         if (peerID != null) {
             // Showing game - unset currentPrivateChatPeer so notifications show
             setCurrentPrivateChatPeer(null)
+            // Clear new move flag when showing the game
+            state.setConnect4GameHasNewMove(peerID, false)
         } else {
             // Hiding game - restore currentPrivateChatPeer if we're still in a private chat
             val selectedPeer = state.getSelectedPrivateChatPeerValue()

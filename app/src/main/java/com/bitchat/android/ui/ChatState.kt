@@ -154,6 +154,10 @@ class ChatState(
     private val _connect4SetupStates = MutableStateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>>(emptyMap())
     val connect4SetupStates: StateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>> = _connect4SetupStates.asStateFlow()
 
+    // Track which games have new moves (for pulsating button)
+    private val _connect4GamesWithNewMoves = MutableStateFlow<Set<String>>(emptySet())
+    val connect4GamesWithNewMoves: StateFlow<Set<String>> = _connect4GamesWithNewMoves.asStateFlow()
+
     val hasUnreadChannels: StateFlow<Boolean> = _unreadChannelMessages
         .map { unreadMap -> unreadMap.values.any { it > 0 } }
         .stateIn(
@@ -370,4 +374,16 @@ class ChatState(
         }
         _connect4SetupStates.value = current
     }
+
+    fun setConnect4GameHasNewMove(peerID: String, hasNewMove: Boolean) {
+        val current = _connect4GamesWithNewMoves.value.toMutableSet()
+        if (hasNewMove) {
+            current.add(peerID)
+        } else {
+            current.remove(peerID)
+        }
+        _connect4GamesWithNewMoves.value = current
+    }
+
+    fun getConnect4GamesWithNewMovesValue() = _connect4GamesWithNewMoves.value
 }
