@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
  * @param myPiece Which piece the current user is playing (RED or YELLOW)
  * @param onMove Callback when user makes a move (column index)
  * @param onNewGame Callback to start a new game
+ * @param onExit Callback to exit the game session (when game is over)
  * @param onClose Callback to close the game screen
  */
 @Composable
@@ -30,6 +31,7 @@ fun Connect4Screen(
     myPiece: Piece,
     onMove: (Int) -> Unit,
     onNewGame: () -> Unit,
+    onExit: () -> Unit,
     onClose: () -> Unit,
     onSurrender: () -> Unit,
     modifier: Modifier = Modifier
@@ -88,12 +90,18 @@ fun Connect4Screen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (game.isGameOver) {
-                // New game button when game is over
+                // New Game and Exit buttons when game is over
                 Button(
                     onClick = onNewGame,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("New Game")
+                }
+                OutlinedButton(
+                    onClick = onExit,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Exit")
                 }
             } else {
                 // Surrender button when game is in progress

@@ -14,7 +14,7 @@ class Connect4GameManager {
         const val ACCEPT_PREFIX = "connect4_accept:"
         const val START_PREFIX = "connect4_start:"
         const val DECLINE_PREFIX = "connect4_decline:"
-        const val SURRENDER_PREFIX = "connect4_surrender:"
+        const val END_GAME_PREFIX = "connect4_end:"
 
         /**
          * Check if a message is a game-related message
@@ -25,7 +25,7 @@ class Connect4GameManager {
                    content.startsWith(ACCEPT_PREFIX) ||
                    content.startsWith(START_PREFIX) ||
                    content.startsWith(DECLINE_PREFIX) ||
-                   content.startsWith(SURRENDER_PREFIX)
+                   content.startsWith(END_GAME_PREFIX)
         }
 
         /**
@@ -87,8 +87,15 @@ class Connect4GameManager {
 
     /**
      * Handle received invite
+     * If a game is already active, automatically decline to allow state reset
      */
     fun handleInvite(peerID: String, opponentColor: Piece, opponentRandom: Int): String? {
+        // If a game is already active with this peer, auto-decline to reset state
+        if (hasActiveGame(peerID)) {
+            Log.w(TAG, "Received invite from $peerID but game is already active - auto-declining")
+            return DECLINE_PREFIX
+        }
+
         val setup = gameSetups.getOrPut(peerID) { GameSetup() }
         if (setup.state != GameSetupState.NONE && setup.state != GameSetupState.INVITE_RECEIVED) {
             Log.w(TAG, "Unexpected invite from $peerID in state ${setup.state}")
@@ -104,6 +111,7 @@ class Connect4GameManager {
 
     /**
      * Accept invite with preferred color and random number
+     * If both players choose the same color, the one with higher random number gets their choice
      */
     fun acceptInvite(peerID: String, preferredColor: Piece): String? {
         val setup = gameSetups[peerID] ?: return null
@@ -112,12 +120,7 @@ class Connect4GameManager {
             return null
         }
 
-        // Ensure colors are different
-        if (preferredColor == setup.opponentPreferredColor) {
-            Log.w(TAG, "Color conflict: both chose ${preferredColor.name}")
-            return null // Color conflict, need to retry
-        }
-
+        // Allow same color - will be resolved in handleAccept based on random numbers
         val randomNumber = Random.nextInt(1, 10000)
         setup.myPreferredColor = preferredColor
         setup.myRandomNumber = randomNumber
@@ -146,24 +149,25 @@ class Connect4GameManager {
         val iStartFirst = myRandom > opponentRandom
 
         // Determine final colors
-        val myColor = setup.myPreferredColor!!
-        val finalOpponentColor = if (opponentColor != myColor) {
-            // Different colors: use preferences
-            opponentColor
-        } else {
-            // Same color: starting player gets their chosen color, other gets opposite
-            if (iStartFirst) {
-                myColor.opposite  // Opponent gets opposite of my color
-            } else {
-                opponentColor  // Opponent gets their chosen color, I'll get opposite
-            }
-        }
+        val myPreferredColor = setup.myPreferredColor!!
+        val finalMyColor: Piece
+        val finalOpponentColor: Piece
 
-        // If colors conflicted and opponent starts first, I get opposite of their color
-        val finalMyColor = if (opponentColor == setup.myPreferredColor && !iStartFirst) {
-            opponentColor.opposite
+        if (opponentColor != myPreferredColor) {
+            // Different colors: use preferences
+            finalMyColor = myPreferredColor
+            finalOpponentColor = opponentColor
         } else {
-            myColor
+            // Same color: whoever has higher random number gets their choice
+            if (iStartFirst) {
+                // I have higher random number - I get my color
+                finalMyColor = myPreferredColor
+                finalOpponentColor = myPreferredColor.opposite
+            } else {
+                // Opponent has higher random number - they get their color
+                finalMyColor = opponentColor.opposite
+                finalOpponentColor = opponentColor
+            }
         }
 
         val startingPlayer = if (iStartFirst) finalMyColor else finalOpponentColor
@@ -387,28 +391,35 @@ class Connect4GameManager {
     }
 
     /**
-     * Format a surrender message
+     * Format an end game message (used for both surrender and exit)
      */
-    fun formatSurrender(): String {
-        return SURRENDER_PREFIX
+    fun formatEndGame(): String {
+        return END_GAME_PREFIX
     }
 
     /**
-     * Handle surrender from opponent (they surrendered, so we win)
+     * Handle end game message from opponent
+     * - During a game (moves made): treat as surrender (show "New Game" screen with ended game)
+     * - Between games (no active game or game already over): exit completely
      */
-    fun handleSurrender(peerID: String): Connect4Game? {
-        val game = activeGames[peerID] ?: return null
-        val (myPiece, opponentPiece) = playerPieces[peerID] ?: return null
+    fun handleEndGame(peerID: String): Connect4Game? {
+        val game = activeGames[peerID]
 
-        // Mark game as over with opponent's piece as winner (they surrendered, we win)
-        // Actually wait - if they surrendered, we win, so the winner should be our piece
-        // But we need to create a new game state with winner = our piece
+        if (game == null || game.isGameOver || game.moves.isEmpty()) {
+            // Between games or no moves: exit completely
+            endGame(peerID)
+            Log.d(TAG, "Opponent $peerID ended game session - exiting completely")
+            return null
+        }
+
+        // During a game with moves: treat as surrender
+        val (myPiece, _) = playerPieces[peerID] ?: return null
         val surrenderedGame = game.copy(
-            winner = myPiece,  // We win because opponent surrendered
+            winner = myPiece,  // We win because opponent ended/surrendered
             isGameOver = true
         )
         activeGames[peerID] = surrenderedGame
-        Log.d(TAG, "Opponent $peerID surrendered - we win!")
+        Log.d(TAG, "Opponent $peerID ended game during play - treating as surrender, we win!")
         return surrenderedGame
     }
 }

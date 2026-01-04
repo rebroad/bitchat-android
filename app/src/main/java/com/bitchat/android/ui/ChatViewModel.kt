@@ -343,6 +343,25 @@ class ChatViewModel(
             ensureGeohashDMSubscriptionIfNeeded(peerID)
         }
         
+        // Check if this peer has a Connect 4 invite we received - if so, mark it as read
+        val setupState = connect4GameManager.getGameSetupState(peerID)
+        if (setupState == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_RECEIVED) {
+            // Send a notification to the inviter that we've seen the invite
+            // This is done by sending a read receipt, but we need to find the invite message first
+            val chats = state.getPrivateChatsValue()
+            val messages = chats[peerID] ?: emptyList()
+            val inviteMessage = messages.find {
+                com.bitchat.android.games.Connect4GameManager.isGameInvite(it.content) &&
+                it.senderPeerID == peerID
+            }
+            if (inviteMessage != null) {
+                // Send read receipt for the invite message
+                val readerNickname = state.getNicknameValue()
+                meshService.sendReadReceipt(inviteMessage.id, peerID, readerNickname)
+                Log.d(TAG, "Marked Connect 4 invite as read by opening private chat with $peerID")
+            }
+        }
+
         val success = privateChatManager.startPrivateChat(peerID, meshService)
         if (success) {
             // Notify notification manager about current private chat
@@ -809,20 +828,29 @@ class ChatViewModel(
                         // Game invite - just process it, don't auto-navigate or show dialog
                         val parsed = connect4GameManager.parseInvite(content)
                         if (parsed != null) {
-                            connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
-                            // Update observable state so UI recomposes
-                            updateConnect4SetupState(senderPeerID)
-                            val newState = connect4GameManager.getGameSetupState(senderPeerID)
-                            Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: $newState, observable state: ${state.getConnect4SetupState(senderPeerID)}")
-                            // Show notification for game invite
-                            val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
-                            notificationManager.showPrivateMessageNotification(
-                                senderPeerID = senderPeerID,
-                                senderNickname = senderNickname,
-                                messageContent = "Connect 4 game invitation"
-                            )
-                            // Ensure chat is initialized so UI can show the invite banner
-                            messageManager.initializePrivateChat(senderPeerID)
+                            val declineMessage = connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
+                            if (declineMessage != null) {
+                                // Auto-decline because game is already active
+                                sendGameMessage(senderPeerID, declineMessage)
+                                connect4GameManager.handleDecline(senderPeerID)
+                                updateConnect4SetupState(senderPeerID)
+                                Log.d(TAG, "Auto-declined Connect 4 invite from $senderPeerID (game already active)")
+                            } else {
+                                // Normal invite processing
+                                // Update observable state so UI recomposes
+                                updateConnect4SetupState(senderPeerID)
+                                val newState = connect4GameManager.getGameSetupState(senderPeerID)
+                                Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: $newState, observable state: ${state.getConnect4SetupState(senderPeerID)}")
+                                // Show notification for game invite
+                                val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
+                                notificationManager.showPrivateMessageNotification(
+                                    senderPeerID = senderPeerID,
+                                    senderNickname = senderNickname,
+                                    messageContent = "Connect 4 game invitation"
+                                )
+                                // Ensure chat is initialized so UI can show the invite banner
+                                messageManager.initializePrivateChat(senderPeerID)
+                            }
                         } else {
                             Log.w(TAG, "Failed to parse Connect 4 invite from $senderPeerID: $content")
                         }
@@ -875,12 +903,22 @@ class ChatViewModel(
                         state.setShowConnect4ColorSelection(null)
                         Log.d(TAG, "Game invite declined by $senderPeerID")
                     }
-                    content.startsWith(com.bitchat.android.games.Connect4GameManager.SURRENDER_PREFIX) -> {
-                        // Opponent surrendered - we win
-                        val surrenderedGame = connect4GameManager.handleSurrender(senderPeerID)
-                        if (surrenderedGame != null) {
-                            state.setConnect4Game(senderPeerID, surrenderedGame)
-                            Log.d(TAG, "Opponent $senderPeerID surrendered - we win!")
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.END_GAME_PREFIX) -> {
+                        // Opponent ended the game session
+                        val endedGame = connect4GameManager.handleEndGame(senderPeerID)
+                        if (endedGame != null) {
+                            // Game was ended during play - treat as surrender, show "New Game" screen
+                            state.setConnect4Game(senderPeerID, endedGame)
+                            Log.d(TAG, "Opponent $senderPeerID ended game during play - treating as surrender, we win!")
+                        } else {
+                            // Game session was ended between games - exit completely
+                            state.setConnect4Game(senderPeerID, null)
+                            state.setShowConnect4Game(null)
+                            // Restore currentPrivateChatPeer if we're still in that private chat
+                            val selectedPeer = state.getSelectedPrivateChatPeerValue()
+                            setCurrentPrivateChatPeer(selectedPeer)
+                            updateConnect4SetupState(senderPeerID)
+                            Log.d(TAG, "Opponent $senderPeerID ended game session - exiting completely")
                         }
                     }
                 }
@@ -1140,9 +1178,9 @@ class ChatViewModel(
         val game = connect4GameManager.getGame(peerID) ?: return
         if (game.isGameOver) return // Already over
 
-        // Send surrender message to opponent
-        val surrenderMessage = connect4GameManager.formatSurrender()
-        sendGameMessage(peerID, surrenderMessage)
+        // Send end game message to opponent (will be treated as surrender since game is in progress)
+        val endGameMessage = connect4GameManager.formatEndGame()
+        sendGameMessage(peerID, endGameMessage)
 
         // End the game locally (opponent will handle showing they won)
         connect4GameManager.endGame(peerID)
@@ -1151,6 +1189,25 @@ class ChatViewModel(
         val selectedPeer = state.getSelectedPrivateChatPeerValue()
         setCurrentPrivateChatPeer(selectedPeer)
         Log.d(TAG, "Surrendered game with $peerID")
+    }
+
+    /**
+     * Exit the game for both players (used when game is over and user clicks "Exit")
+     */
+    fun exitConnect4Game(peerID: String) {
+        // Send end game message to notify opponent to exit
+        val endGameMessage = connect4GameManager.formatEndGame()
+        sendGameMessage(peerID, endGameMessage)
+
+        // End the game locally
+        connect4GameManager.endGame(peerID)
+        state.setConnect4Game(peerID, null)
+        state.setShowConnect4Game(null)
+        updateConnect4SetupState(peerID)
+        // Restore currentPrivateChatPeer if we're still in that private chat
+        val selectedPeer = state.getSelectedPrivateChatPeerValue()
+        setCurrentPrivateChatPeer(selectedPeer)
+        Log.d(TAG, "Exited game session with $peerID")
     }
 
     // MARK: - Emergency Clear

@@ -159,7 +159,12 @@ fun ChatScreen(viewModel: ChatViewModel) {
                                 viewModel.startNewConnect4Game(peerID)
                                 viewModel.showConnect4ColorSelection(peerID)
                             },
+                            onExit = {
+                                // Exit the game session (sends connect4_end to opponent)
+                                viewModel.exitConnect4Game(peerID)
+                            },
                             onClose = {
+                                // Just hide the game UI
                                 viewModel.showConnect4Game(null)
                             },
                             onSurrender = {
