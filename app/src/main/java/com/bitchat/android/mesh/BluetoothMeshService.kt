@@ -372,11 +372,13 @@ class BluetoothMeshService(private val context: Context) {
             // Callbacks
             override fun onMessageReceived(message: BitchatMessage) {
                 // Filter out game messages - they shouldn't appear in chat
-                val isGameMessage = message.content.startsWith("connect4_move:") ||
-                                    message.content.startsWith("connect4_invite:") ||
-                                    message.content.startsWith("connect4_accept:") ||
-                                    message.content.startsWith("connect4_start:") ||
-                                    message.content.startsWith("connect4_decline:")
+                // Use Connect4GameManager to check if it's a game message
+                val isGameMessage = message.content.startsWith(com.bitchat.android.games.Connect4GameManager.MOVE_PREFIX) ||
+                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.INVITE_PREFIX) ||
+                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.ACCEPT_PREFIX) ||
+                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.START_PREFIX) ||
+                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.DECLINE_PREFIX) ||
+                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.SURRENDER_PREFIX)
 
                 // Always reflect into process-wide store so UI can hydrate after recreation
                 // BUT skip game messages - they're handled by game logic, not chat

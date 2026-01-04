@@ -9,12 +9,12 @@ import kotlin.random.Random
 class Connect4GameManager {
     companion object {
         private const val TAG = "Connect4GameManager"
-        private const val MOVE_PREFIX = "connect4_move:"
-        private const val INVITE_PREFIX = "connect4_invite:"
-        private const val ACCEPT_PREFIX = "connect4_accept:"
-        private const val START_PREFIX = "connect4_start:"
-        private const val DECLINE_PREFIX = "connect4_decline:"
-        private const val SURRENDER_PREFIX = "connect4_surrender:"
+        const val MOVE_PREFIX = "connect4_move:"
+        const val INVITE_PREFIX = "connect4_invite:"
+        const val ACCEPT_PREFIX = "connect4_accept:"
+        const val START_PREFIX = "connect4_start:"
+        const val DECLINE_PREFIX = "connect4_decline:"
+        const val SURRENDER_PREFIX = "connect4_surrender:"
     }
 
     enum class GameSetupState {

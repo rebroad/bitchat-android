@@ -204,7 +204,7 @@ fun MessageItem(
         if (message.isPrivate &&
             message.senderPeerID != null &&
             message.senderPeerID != meshService.myPeerID &&
-            message.content.startsWith("connect4_invite:")) {
+            message.content.startsWith(com.bitchat.android.games.Connect4GameManager.INVITE_PREFIX)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

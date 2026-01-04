@@ -747,100 +747,103 @@ class ChatViewModel(
             val senderPeerID = message.senderPeerID!!
             val content = message.content
 
-            when {
-                connect4GameManager.isGameMove(content) -> {
-                    // Game move
-                    val column = connect4GameManager.parseMove(content)
-                    if (column != null) {
-                        val newGame = connect4GameManager.applyOpponentMove(senderPeerID, column)
-                        if (newGame != null) {
-                            state.setConnect4Game(senderPeerID, newGame)
-                            Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+            // Check if this is a game message - if so, process it and return early
+            if (connect4GameManager.isGameMessage(content)) {
+                when {
+                    connect4GameManager.isGameMove(content) -> {
+                        // Game move
+                        val column = connect4GameManager.parseMove(content)
+                        if (column != null) {
+                            val newGame = connect4GameManager.applyOpponentMove(senderPeerID, column)
+                            if (newGame != null) {
+                                state.setConnect4Game(senderPeerID, newGame)
+                                Log.d(TAG, "Processed Connect 4 move from $senderPeerID: column $column")
+                            }
                         }
                     }
-                }
-                content.startsWith("connect4_invite:") -> {
-                    // Game invite - just process it, don't auto-navigate or show dialog
-                    val parsed = connect4GameManager.parseInvite(content)
-                    if (parsed != null) {
-                        connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
-                        // Update observable state so UI recomposes
-                        updateConnect4SetupState(senderPeerID)
-                        // Show notification for game invite
-                        val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
-                        notificationManager.showPrivateMessageNotification(
-                            senderPeerID = senderPeerID,
-                            senderNickname = senderNickname,
-                            messageContent = "Connect 4 game invitation"
-                        )
-                        // Ensure chat is initialized so UI can show the invite banner
-                        messageManager.initializePrivateChat(senderPeerID)
-                        Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: ${connect4GameManager.getGameSetupState(senderPeerID)}")
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.INVITE_PREFIX) -> {
+                        // Game invite - just process it, don't auto-navigate or show dialog
+                        val parsed = connect4GameManager.parseInvite(content)
+                        if (parsed != null) {
+                            connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
+                            // Update observable state so UI recomposes
+                            updateConnect4SetupState(senderPeerID)
+                            // Show notification for game invite
+                            val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
+                            notificationManager.showPrivateMessageNotification(
+                                senderPeerID = senderPeerID,
+                                senderNickname = senderNickname,
+                                messageContent = "Connect 4 game invitation"
+                            )
+                            // Ensure chat is initialized so UI can show the invite banner
+                            messageManager.initializePrivateChat(senderPeerID)
+                            Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: ${connect4GameManager.getGameSetupState(senderPeerID)}")
+                        }
                     }
-                }
-                content.startsWith("connect4_accept:") -> {
-                    // Accept invite
-                    val parsed = connect4GameManager.parseAccept(content)
-                    if (parsed != null) {
-                        val startMessage = connect4GameManager.handleAccept(senderPeerID, parsed.first, parsed.second)
-                        if (startMessage != null) {
-                            // Send start message and initialize game
-                            sendGameMessage(senderPeerID, startMessage)
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.ACCEPT_PREFIX) -> {
+                        // Accept invite
+                        val parsed = connect4GameManager.parseAccept(content)
+                        if (parsed != null) {
+                            val startMessage = connect4GameManager.handleAccept(senderPeerID, parsed.first, parsed.second)
+                            if (startMessage != null) {
+                                // Send start message and initialize game
+                                sendGameMessage(senderPeerID, startMessage)
+                                val game = connect4GameManager.getGame(senderPeerID)
+                                if (game != null) {
+                                    state.setConnect4Game(senderPeerID, game)
+                                    state.setShowConnect4Game(senderPeerID)
+                                    state.setShowConnect4ColorSelection(null)
+                                    updateConnect4SetupState(senderPeerID) // Update observable state
+                                    // Notify notification manager that we're viewing game UI
+                                    notificationManager.setViewingGame(senderPeerID, true)
+                                }
+                                Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
+                            }
+                        }
+                    }
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.START_PREFIX) -> {
+                        // Start game (after we accepted)
+                        val parsed = connect4GameManager.parseStart(content)
+                        if (parsed != null) {
+                            connect4GameManager.handleStart(senderPeerID, parsed.first, parsed.second, parsed.third)
                             val game = connect4GameManager.getGame(senderPeerID)
                             if (game != null) {
                                 state.setConnect4Game(senderPeerID, game)
-                                state.setShowConnect4Game(senderPeerID)
+                                // Auto-show game when it starts
+                                if (showConnect4Game.value == null) {
+                                    state.setShowConnect4Game(senderPeerID)
+                                    // Notify notification manager that we're viewing game UI
+                                    notificationManager.setViewingGame(senderPeerID, true)
+                                }
                                 state.setShowConnect4ColorSelection(null)
                                 updateConnect4SetupState(senderPeerID) // Update observable state
-                                // Notify notification manager that we're viewing game UI
-                                notificationManager.setViewingGame(senderPeerID, true)
+                                Log.d(TAG, "Game started with $senderPeerID")
                             }
-                            Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
+                        }
+                    }
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.DECLINE_PREFIX) -> {
+                        // Decline invite (from recipient)
+                        connect4GameManager.handleDecline(senderPeerID)
+                        updateConnect4SetupState(senderPeerID) // Update observable state
+                        state.setShowConnect4ColorSelection(null)
+                        Log.d(TAG, "Game invite declined by $senderPeerID")
+                    }
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.SURRENDER_PREFIX) -> {
+                        // Opponent surrendered - we win
+                        val surrenderedGame = connect4GameManager.handleSurrender(senderPeerID)
+                        if (surrenderedGame != null) {
+                            state.setConnect4Game(senderPeerID, surrenderedGame)
+                            Log.d(TAG, "Opponent $senderPeerID surrendered - we win!")
                         }
                     }
                 }
-                content.startsWith("connect4_start:") -> {
-                    // Start game (after we accepted)
-                    val parsed = connect4GameManager.parseStart(content)
-                    if (parsed != null) {
-                        connect4GameManager.handleStart(senderPeerID, parsed.first, parsed.second, parsed.third)
-                        val game = connect4GameManager.getGame(senderPeerID)
-                        if (game != null) {
-                            state.setConnect4Game(senderPeerID, game)
-                            // Auto-show game when it starts
-                            if (showConnect4Game.value == null) {
-                                state.setShowConnect4Game(senderPeerID)
-                                // Notify notification manager that we're viewing game UI
-                                notificationManager.setViewingGame(senderPeerID, true)
-                            }
-                            state.setShowConnect4ColorSelection(null)
-                            updateConnect4SetupState(senderPeerID) // Update observable state
-                            Log.d(TAG, "Game started with $senderPeerID")
-                        }
-                    }
-                }
-                content.startsWith("connect4_decline:") -> {
-                    // Decline invite (from recipient)
-                    connect4GameManager.handleDecline(senderPeerID)
-                    updateConnect4SetupState(senderPeerID) // Update observable state
-                    state.setShowConnect4ColorSelection(null)
-                    Log.d(TAG, "Game invite declined by $senderPeerID")
-                }
-                content.startsWith("connect4_surrender:") -> {
-                    // Opponent surrendered - we win
-                    val surrenderedGame = connect4GameManager.handleSurrender(senderPeerID)
-                    if (surrenderedGame != null) {
-                        state.setConnect4Game(senderPeerID, surrenderedGame)
-                        Log.d(TAG, "Opponent $senderPeerID surrendered - we win!")
-                    }
-                }
+                // Game messages are fully handled - don't pass to normal message handler
+                return
             }
         }
 
-        // Don't pass game messages to the handler (they're handled above and shouldn't appear in chat)
-        if (!connect4GameManager.isGameMessage(message.content)) {
-            meshDelegateHandler.didReceiveMessage(message)
-        }
+        // Pass non-game messages to the normal handler
+        meshDelegateHandler.didReceiveMessage(message)
     }
     
     override fun didUpdatePeerList(peers: List<String>) {
