@@ -90,7 +90,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val selectedLocationChannel by viewModel.selectedLocationChannel.collectAsStateWithLifecycle()
 
     // Determine what messages to show based on current context (unified timelines)
-    val displayMessages = when {
+    val rawDisplayMessages = when {
         selectedPrivatePeer != null -> privateChats[selectedPrivatePeer] ?: emptyList()
         currentChannel != null -> channelMessages[currentChannel] ?: emptyList()
         else -> {
@@ -102,6 +102,11 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 messages // Mesh timeline
             }
         }
+    }
+
+    // Filter out game messages from display (they're stored for state recovery but not shown in chat)
+    val displayMessages = rawDisplayMessages.filter { message ->
+        !com.bitchat.android.games.Connect4GameManager.isGameMessage(message.content)
     }
 
     // Determine whether to show media buttons (only hide in geohash location chats)

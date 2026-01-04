@@ -349,6 +349,27 @@ class ChatViewModel(
             // Clear notifications for this sender since user is now viewing the chat
             clearNotificationsForSender(peerID)
 
+            // Re-process any pending game invite messages (in case ViewModel was recreated)
+            // Game messages are now stored in AppStateStore, so we can find and re-process them
+            val chats = state.getPrivateChatsValue()
+            val messages = chats[peerID] ?: emptyList()
+            // Find the most recent invite message that we haven't processed yet
+            val recentInvite = messages.lastOrNull { msg ->
+                msg.senderPeerID == peerID &&
+                com.bitchat.android.games.Connect4GameManager.isGameInvite(msg.content)
+            }
+            if (recentInvite != null) {
+                // Only re-process if we don't already have a setup state for this invite
+                if (connect4GameManager.getGameSetupState(peerID) == com.bitchat.android.games.Connect4GameManager.GameSetupState.NONE) {
+                    val parsed = connect4GameManager.parseInvite(recentInvite.content)
+                    if (parsed != null) {
+                        connect4GameManager.handleInvite(peerID, parsed.first, parsed.second)
+                        updateConnect4SetupState(peerID)
+                        Log.d(TAG, "Re-processed Connect 4 invite for $peerID when navigating to chat")
+                    }
+                }
+            }
+
             // Persistently mark all messages in this conversation as read so Nostr fetches
             // after app restarts won't re-mark them as unread.
             try {
@@ -733,6 +754,11 @@ class ChatViewModel(
     // MARK: - BluetoothMeshDelegate Implementation (delegated)
     
     override fun didReceiveMessage(message: BitchatMessage) {
+        // Log all received private messages for debugging
+        if (message.isPrivate && message.senderPeerID != null) {
+            Log.d(TAG, "Received private message from ${message.senderPeerID}: ${message.content.take(50)}")
+        }
+
         // Filter out game messages from ourselves (sent messages that come back)
         if (message.isPrivate && message.senderPeerID == meshService.myPeerID) {
             // This is a message we sent - if it's a game message, skip it entirely

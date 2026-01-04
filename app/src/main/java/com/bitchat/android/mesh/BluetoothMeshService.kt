@@ -371,28 +371,27 @@ class BluetoothMeshService(private val context: Context) {
             
             // Callbacks
             override fun onMessageReceived(message: BitchatMessage) {
-                // Filter out game messages - they shouldn't appear in chat
-                // Use Connect4GameManager to check if it's a game message
-                val isGameMessage = com.bitchat.android.games.Connect4GameManager.isGameMessage(message.content)
-
-                // Always reflect into process-wide store so UI can hydrate after recreation
-                // BUT skip game messages - they're handled by game logic, not chat
-                if (!isGameMessage) {
-                    try {
-                        when {
-                            message.isPrivate -> {
-                                val peer = message.senderPeerID ?: ""
-                                if (peer.isNotEmpty()) com.bitchat.android.services.AppStateStore.addPrivateMessage(peer, message)
-                            }
-                            message.channel != null -> {
-                                com.bitchat.android.services.AppStateStore.addChannelMessage(message.channel!!, message)
-                            }
-                            else -> {
-                                com.bitchat.android.services.AppStateStore.addPublicMessage(message)
-                            }
-                        }
-                    } catch (_: Exception) { }
+                // Log all received messages for connectivity debugging
+                if (message.isPrivate && message.senderPeerID != null) {
+                    Log.d(TAG, "📨 Received private message from ${message.senderPeerID}: ${message.content.take(50)}")
                 }
+
+                // Store ALL messages in AppStateStore (including game messages) so they can be re-processed
+                // if the ViewModel is recreated. Game messages will be filtered from display in the UI.
+                try {
+                    when {
+                        message.isPrivate -> {
+                            val peer = message.senderPeerID ?: ""
+                            if (peer.isNotEmpty()) com.bitchat.android.services.AppStateStore.addPrivateMessage(peer, message)
+                        }
+                        message.channel != null -> {
+                            com.bitchat.android.services.AppStateStore.addChannelMessage(message.channel!!, message)
+                        }
+                        else -> {
+                            com.bitchat.android.services.AppStateStore.addPublicMessage(message)
+                        }
+                    }
+                } catch (_: Exception) { }
                 // And forward to UI delegate if attached (even game messages, so game logic can process them)
                 delegate?.didReceiveMessage(message)
 
