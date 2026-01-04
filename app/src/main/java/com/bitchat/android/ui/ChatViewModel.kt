@@ -736,7 +736,7 @@ class ChatViewModel(
         // Filter out game messages from ourselves (sent messages that come back)
         if (message.isPrivate && message.senderPeerID == meshService.myPeerID) {
             // This is a message we sent - if it's a game message, skip it entirely
-            if (connect4GameManager.isGameMessage(message.content)) {
+            if (com.bitchat.android.games.Connect4GameManager.isGameMessage(message.content)) {
                 Log.d(TAG, "Ignoring sent game message: ${message.content.take(30)}")
                 return
             }
@@ -748,9 +748,9 @@ class ChatViewModel(
             val content = message.content
 
             // Check if this is a game message - if so, process it and return early
-            if (connect4GameManager.isGameMessage(content)) {
+            if (com.bitchat.android.games.Connect4GameManager.isGameMessage(content)) {
                 when {
-                    connect4GameManager.isGameMove(content) -> {
+                    com.bitchat.android.games.Connect4GameManager.isGameMove(content) -> {
                         // Game move
                         val column = connect4GameManager.parseMove(content)
                         if (column != null) {
@@ -761,7 +761,7 @@ class ChatViewModel(
                             }
                         }
                     }
-                    content.startsWith(com.bitchat.android.games.Connect4GameManager.INVITE_PREFIX) -> {
+                    com.bitchat.android.games.Connect4GameManager.isGameInvite(content) -> {
                         // Game invite - just process it, don't auto-navigate or show dialog
                         val parsed = connect4GameManager.parseInvite(content)
                         if (parsed != null) {

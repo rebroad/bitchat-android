@@ -15,6 +15,32 @@ class Connect4GameManager {
         const val START_PREFIX = "connect4_start:"
         const val DECLINE_PREFIX = "connect4_decline:"
         const val SURRENDER_PREFIX = "connect4_surrender:"
+
+        /**
+         * Check if a message is a game-related message
+         */
+        fun isGameMessage(content: String): Boolean {
+            return content.startsWith(MOVE_PREFIX) ||
+                   content.startsWith(INVITE_PREFIX) ||
+                   content.startsWith(ACCEPT_PREFIX) ||
+                   content.startsWith(START_PREFIX) ||
+                   content.startsWith(DECLINE_PREFIX) ||
+                   content.startsWith(SURRENDER_PREFIX)
+        }
+
+        /**
+         * Check if a message is a Connect 4 move
+         */
+        fun isGameMove(content: String): Boolean {
+            return content.startsWith(MOVE_PREFIX)
+        }
+
+        /**
+         * Check if a message is a Connect 4 game invite
+         */
+        fun isGameInvite(content: String): Boolean {
+            return content.startsWith(INVITE_PREFIX)
+        }
     }
 
     enum class GameSetupState {
@@ -202,25 +228,6 @@ class Connect4GameManager {
      */
     fun getOpponentPreferredColor(peerID: String): Piece? {
         return gameSetups[peerID]?.opponentPreferredColor
-    }
-
-    /**
-     * Check if a message is a game-related message
-     */
-    fun isGameMessage(content: String): Boolean {
-        return content.startsWith(MOVE_PREFIX) ||
-               content.startsWith(INVITE_PREFIX) ||
-               content.startsWith(ACCEPT_PREFIX) ||
-               content.startsWith(START_PREFIX) ||
-               content.startsWith(DECLINE_PREFIX) ||
-               content.startsWith(SURRENDER_PREFIX)
-    }
-
-    /**
-     * Check if a message is a Connect 4 move
-     */
-    fun isGameMove(content: String): Boolean {
-        return content.startsWith(MOVE_PREFIX)
     }
 
     /**

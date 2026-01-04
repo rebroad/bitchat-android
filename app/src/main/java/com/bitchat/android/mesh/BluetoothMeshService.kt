@@ -373,12 +373,7 @@ class BluetoothMeshService(private val context: Context) {
             override fun onMessageReceived(message: BitchatMessage) {
                 // Filter out game messages - they shouldn't appear in chat
                 // Use Connect4GameManager to check if it's a game message
-                val isGameMessage = message.content.startsWith(com.bitchat.android.games.Connect4GameManager.MOVE_PREFIX) ||
-                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.INVITE_PREFIX) ||
-                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.ACCEPT_PREFIX) ||
-                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.START_PREFIX) ||
-                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.DECLINE_PREFIX) ||
-                                    message.content.startsWith(com.bitchat.android.games.Connect4GameManager.SURRENDER_PREFIX)
+                val isGameMessage = com.bitchat.android.games.Connect4GameManager.isGameMessage(message.content)
 
                 // Always reflect into process-wide store so UI can hydrate after recreation
                 // BUT skip game messages - they're handled by game logic, not chat
@@ -406,10 +401,23 @@ class BluetoothMeshService(private val context: Context) {
                     try {
                         val senderPeerID = message.senderPeerID
                         if (senderPeerID != null) {
-                            val nick = try { peerManager.getPeerNickname(senderPeerID) } catch (_: Exception) { null } ?: senderPeerID
-                            val preview = com.bitchat.android.ui.NotificationTextUtils.buildPrivateMessagePreview(message)
-                            serviceNotificationManager.setAppBackgroundState(true)
-                            serviceNotificationManager.showPrivateMessageNotification(senderPeerID, nick, preview)
+                            val content = message.content
+                            // Check if it's a game message - only show notification for invites
+                            val isGameInvite = com.bitchat.android.games.Connect4GameManager.isGameInvite(content)
+                            val isGameMessage = com.bitchat.android.games.Connect4GameManager.isGameMessage(content)
+
+                            // Skip other game messages (they're handled by game logic when app opens)
+                            if (!isGameMessage || isGameInvite) {
+                                val nick = try { peerManager.getPeerNickname(senderPeerID) } catch (_: Exception) { null } ?: senderPeerID
+                                // Format notification - show friendly message for game invites
+                                val preview = if (isGameInvite) {
+                                    "Connect 4 game invitation"
+                                } else {
+                                    com.bitchat.android.ui.NotificationTextUtils.buildPrivateMessagePreview(message)
+                                }
+                                serviceNotificationManager.setAppBackgroundState(true)
+                                serviceNotificationManager.showPrivateMessageNotification(senderPeerID, nick, preview)
+                            }
                         }
                     } catch (_: Exception) { }
                 }
