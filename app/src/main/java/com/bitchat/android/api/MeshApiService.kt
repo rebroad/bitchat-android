@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
  * Other apps can bind to this service to send/receive messages over the mesh network.
  *
  * Use cases:
- * - Games (chess, connect 4, etc.) - send game moves as messages
  * - Custom apps - use mesh for any peer-to-peer communication
  * - TCP/IP bridge - bridge mesh to TCP/IP networks
  */
@@ -50,11 +49,8 @@ class MeshApiService : Service() {
             return try {
                 val meshService = MeshServiceHolder.getOrCreate(applicationContext)
 
-                // Create a custom message format: "GAME:type:payload"
-                val messageContent = when (messageType) {
-                    "chess_move", "connect4_move" -> "$messageType:${payload.toString(Charsets.UTF_8)}"
-                    else -> "GAME:$messageType:${payload.toString(Charsets.UTF_8)}"
-                }
+                // Create a generic message format: "GAME:type:payload"
+                val messageContent = "GAME:$messageType:${payload.toString(Charsets.UTF_8)}"
 
                 apiScope.launch {
                     meshService.sendPrivateMessage(
@@ -75,10 +71,7 @@ class MeshApiService : Service() {
             return try {
                 val meshService = MeshServiceHolder.getOrCreate(applicationContext)
 
-                val messageContent = when (messageType) {
-                    "chess_move", "connect4_move" -> "$messageType:${payload.toString(Charsets.UTF_8)}"
-                    else -> "GAME:$messageType:${payload.toString(Charsets.UTF_8)}"
-                }
+                val messageContent = "GAME:$messageType:${payload.toString(Charsets.UTF_8)}"
 
                 apiScope.launch {
                     meshService.sendMessage(
@@ -260,10 +253,8 @@ private class MeshApiDelegateWrapper(
         return when {
             content.startsWith("GAME:") -> {
                 val type = content.substringAfter("GAME:").substringBefore(":")
-                "game_$type"
+                type // Return the actual type (e.g., "chess_move"), not "game_chess_move"
             }
-            content.startsWith("CHESS:") -> "chess_move"
-            content.startsWith("CONNECT4:") -> "connect4_move"
             message.isPrivate -> "private_message"
             else -> "chat"
         }
