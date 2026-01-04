@@ -69,9 +69,6 @@ class NotificationManager(
     @Volatile
     private var currentGeohash: String? = null
 
-    // Track if user is viewing game UI per peer (to show notifications even when viewing chat if game UI is shown)
-    private val viewingGamePeers = mutableSetOf<String>()
-
     data class PendingNotification(
         val senderPeerID: String,
         val senderNickname: String, 
@@ -144,33 +141,18 @@ class NotificationManager(
     }
 
     /**
-     * Track if user is viewing game UI for a peer (affects notification behavior)
-     * Called when game UI is shown (invite accepted, game started) or hidden (closed)
-     */
-    fun setViewingGame(peerID: String?, isViewing: Boolean) {
-        if (peerID == null) return
-        if (isViewing) {
-            viewingGamePeers.add(peerID)
-        } else {
-            viewingGamePeers.remove(peerID)
-        }
-        Log.d(TAG, "Viewing game UI for peer $peerID: $isViewing")
-    }
-
-    /**
      * Show a notification for a private message with proper grouping and state awareness
      */
     fun showPrivateMessageNotification(senderPeerID: String, senderNickname: String, messageContent: String) {
         // Show notifications if:
         // 1. App is in background, OR
-        // 2. User is not viewing this specific chat, OR
-        // 3. User is viewing this chat but is viewing the game UI (so they might not see messages)
+        // 2. User is not viewing this specific chat (currentPrivateChatPeer != senderPeerID)
+        //    (If currentPrivateChatPeer is null, we're viewing game/mesh chat, so show notifications)
         val isViewingChat = currentPrivateChatPeer == senderPeerID
-        val isViewingGame = viewingGamePeers.contains(senderPeerID)
-        val shouldNotify = isAppInBackground || (!isViewingChat) || (isViewingChat && isViewingGame)
+        val shouldNotify = isAppInBackground || !isViewingChat
         
         if (!shouldNotify) {
-            Log.d(TAG, "Skipping notification - app in foreground and viewing chat with $senderNickname (not viewing game)")
+            Log.d(TAG, "Skipping notification - app in foreground and viewing chat with $senderNickname")
             return
         }
 

@@ -794,8 +794,8 @@ class ChatViewModel(
                                     state.setShowConnect4Game(senderPeerID)
                                     state.setShowConnect4ColorSelection(null)
                                     updateConnect4SetupState(senderPeerID) // Update observable state
-                                    // Notify notification manager that we're viewing game UI
-                                    notificationManager.setViewingGame(senderPeerID, true)
+                                    // Unset currentPrivateChatPeer so notifications show (we're viewing game, not chat)
+                                    setCurrentPrivateChatPeer(null)
                                 }
                                 Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
                             }
@@ -812,8 +812,8 @@ class ChatViewModel(
                                 // Auto-show game when it starts
                                 if (showConnect4Game.value == null) {
                                     state.setShowConnect4Game(senderPeerID)
-                                    // Notify notification manager that we're viewing game UI
-                                    notificationManager.setViewingGame(senderPeerID, true)
+                                    // Unset currentPrivateChatPeer so notifications show (we're viewing game, not chat)
+                                    setCurrentPrivateChatPeer(null)
                                 }
                                 state.setShowConnect4ColorSelection(null)
                                 updateConnect4SetupState(senderPeerID) // Update observable state
@@ -961,8 +961,16 @@ class ChatViewModel(
      */
     fun showConnect4Game(peerID: String?) {
         state.setShowConnect4Game(peerID)
-        // Notify notification manager about game UI visibility
-        notificationManager.setViewingGame(peerID, peerID != null)
+        // When showing game, unset currentPrivateChatPeer (we're not viewing the chat)
+        // When hiding game, restore currentPrivateChatPeer if we're still in that private chat
+        if (peerID != null) {
+            // Showing game - unset currentPrivateChatPeer so notifications show
+            setCurrentPrivateChatPeer(null)
+        } else {
+            // Hiding game - restore currentPrivateChatPeer if we're still in a private chat
+            val selectedPeer = state.getSelectedPrivateChatPeerValue()
+            setCurrentPrivateChatPeer(selectedPeer)
+        }
     }
 
     /**
@@ -972,8 +980,9 @@ class ChatViewModel(
         connect4GameManager.endGame(peerID)
         state.setConnect4Game(peerID, null)
         state.setShowConnect4Game(null)
-        // Notify notification manager that we're no longer viewing game UI
-        notificationManager.setViewingGame(peerID, false)
+        // Restore currentPrivateChatPeer if we're still in that private chat
+        val selectedPeer = state.getSelectedPrivateChatPeerValue()
+        setCurrentPrivateChatPeer(selectedPeer)
     }
 
     /**
@@ -1072,8 +1081,9 @@ class ChatViewModel(
         // End the game locally (opponent will handle showing they won)
         connect4GameManager.endGame(peerID)
         state.setConnect4Game(peerID, null)
-        // Game UI is closed, so notify notification manager
-        notificationManager.setViewingGame(peerID, false)
+        // Restore currentPrivateChatPeer if we're still in that private chat
+        val selectedPeer = state.getSelectedPrivateChatPeerValue()
+        setCurrentPrivateChatPeer(selectedPeer)
         Log.d(TAG, "Surrendered game with $peerID")
     }
 
