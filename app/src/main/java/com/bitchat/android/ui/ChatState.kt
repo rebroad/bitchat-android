@@ -151,6 +151,9 @@ class ChatState(
     private val _showConnect4ColorSelection = MutableStateFlow<String?>(null) // peerID if color selection is shown
     val showConnect4ColorSelection: StateFlow<String?> = _showConnect4ColorSelection.asStateFlow()
 
+    private val _connect4SetupStates = MutableStateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>>(emptyMap())
+    val connect4SetupStates: StateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>> = _connect4SetupStates.asStateFlow()
+
     val hasUnreadChannels: StateFlow<Boolean> = _unreadChannelMessages
         .map { unreadMap -> unreadMap.values.any { it > 0 } }
         .stateIn(
@@ -352,5 +355,19 @@ class ChatState(
     fun getShowConnect4ColorSelectionValue() = _showConnect4ColorSelection.value
     fun setShowConnect4ColorSelection(peerID: String?) {
         _showConnect4ColorSelection.value = peerID
+    }
+
+    fun getConnect4SetupState(peerID: String): com.bitchat.android.games.Connect4GameManager.GameSetupState {
+        return _connect4SetupStates.value[peerID] ?: com.bitchat.android.games.Connect4GameManager.GameSetupState.NONE
+    }
+
+    fun setConnect4SetupState(peerID: String, setupState: com.bitchat.android.games.Connect4GameManager.GameSetupState) {
+        val current = _connect4SetupStates.value.toMutableMap()
+        if (setupState == com.bitchat.android.games.Connect4GameManager.GameSetupState.NONE) {
+            current.remove(peerID)
+        } else {
+            current[peerID] = setupState
+        }
+        _connect4SetupStates.value = current
     }
 }

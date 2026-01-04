@@ -87,6 +87,7 @@ class PrivateChatManager(
         recipientNickname: String?,
         senderNickname: String?,
         myPeerID: String,
+        skipAddToChat: Boolean = false,
         onSendMessage: (String, String, String, String) -> Unit
     ): Boolean {
         if (isPeerBlocked(peerID)) {
@@ -111,7 +112,10 @@ class PrivateChatManager(
             deliveryStatus = DeliveryStatus.Sending
         )
 
-        messageManager.addPrivateMessage(peerID, message)
+        // Only add to chat if not skipped (e.g., for game messages)
+        if (!skipAddToChat) {
+            messageManager.addPrivateMessage(peerID, message)
+        }
         onSendMessage(content, peerID, recipientNickname ?: "", message.id)
 
         return true

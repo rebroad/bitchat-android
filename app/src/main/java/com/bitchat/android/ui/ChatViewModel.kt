@@ -145,6 +145,7 @@ class ChatViewModel(
     val connect4Games: StateFlow<Map<String, com.bitchat.android.games.Connect4Game>> = state.connect4Games
     val showConnect4Game: StateFlow<String?> = state.showConnect4Game
     val showConnect4ColorSelection: StateFlow<String?> = state.showConnect4ColorSelection
+    val connect4SetupStates: StateFlow<Map<String, com.bitchat.android.games.Connect4GameManager.GameSetupState>> = state.connect4SetupStates
 
     init {
         // Note: Mesh service delegate is now set by MainActivity
@@ -732,6 +733,15 @@ class ChatViewModel(
     // MARK: - BluetoothMeshDelegate Implementation (delegated)
     
     override fun didReceiveMessage(message: BitchatMessage) {
+        // Filter out game messages from ourselves (sent messages that come back)
+        if (message.isPrivate && message.senderPeerID == meshService.myPeerID) {
+            // This is a message we sent - if it's a game message, skip it entirely
+            if (connect4GameManager.isGameMessage(message.content)) {
+                Log.d(TAG, "Ignoring sent game message: ${message.content.take(30)}")
+                return
+            }
+        }
+
         // Check for Connect 4 game messages before processing normally
         if (message.isPrivate && message.senderPeerID != null) {
             val senderPeerID = message.senderPeerID!!
@@ -754,7 +764,18 @@ class ChatViewModel(
                     val parsed = connect4GameManager.parseInvite(content)
                     if (parsed != null) {
                         connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
-                        Log.d(TAG, "Received Connect 4 invite from $senderPeerID")
+                        // Update observable state so UI recomposes
+                        updateConnect4SetupState(senderPeerID)
+                        // Show notification for game invite
+                        val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
+                        notificationManager.showPrivateMessageNotification(
+                            senderPeerID = senderPeerID,
+                            senderNickname = senderNickname,
+                            messageContent = "Connect 4 game invitation"
+                        )
+                        // Ensure chat is initialized so UI can show the invite banner
+                        messageManager.initializePrivateChat(senderPeerID)
+                        Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: ${connect4GameManager.getGameSetupState(senderPeerID)}")
                     }
                 }
                 content.startsWith("connect4_accept:") -> {
@@ -770,6 +791,7 @@ class ChatViewModel(
                                 state.setConnect4Game(senderPeerID, game)
                                 state.setShowConnect4Game(senderPeerID)
                                 state.setShowConnect4ColorSelection(null)
+                                updateConnect4SetupState(senderPeerID) // Update observable state
                             }
                             Log.d(TAG, "Accepted Connect 4 invite from $senderPeerID, sent start message")
                         }
@@ -783,8 +805,12 @@ class ChatViewModel(
                         val game = connect4GameManager.getGame(senderPeerID)
                         if (game != null) {
                             state.setConnect4Game(senderPeerID, game)
-                            state.setShowConnect4Game(senderPeerID)
+                            // Auto-show game when it starts
+                            if (showConnect4Game.value == null) {
+                                state.setShowConnect4Game(senderPeerID)
+                            }
                             state.setShowConnect4ColorSelection(null)
+                            updateConnect4SetupState(senderPeerID) // Update observable state
                             Log.d(TAG, "Game started with $senderPeerID")
                         }
                     }
@@ -792,6 +818,7 @@ class ChatViewModel(
                 content.startsWith("connect4_decline:") -> {
                     // Decline invite (from recipient)
                     connect4GameManager.handleDecline(senderPeerID)
+                    updateConnect4SetupState(senderPeerID) // Update observable state
                     state.setShowConnect4ColorSelection(null)
                     Log.d(TAG, "Game invite declined by $senderPeerID")
                 }
@@ -841,6 +868,7 @@ class ChatViewModel(
      */
     fun sendConnect4Invite(peerID: String, preferredColor: com.bitchat.android.games.Piece) {
         val inviteMessage = connect4GameManager.sendInvite(peerID, preferredColor)
+        updateConnect4SetupState(peerID) // Update observable state
         sendGameMessage(peerID, inviteMessage)
         state.setShowConnect4ColorSelection(null) // Close color selection dialog
         Log.d(TAG, "Sent Connect 4 invite to $peerID with color ${preferredColor.name}")
@@ -852,6 +880,7 @@ class ChatViewModel(
     fun acceptConnect4Invite(peerID: String, preferredColor: com.bitchat.android.games.Piece) {
         val acceptMessage = connect4GameManager.acceptInvite(peerID, preferredColor)
         if (acceptMessage != null) {
+            updateConnect4SetupState(peerID) // Update observable state
             sendGameMessage(peerID, acceptMessage)
             Log.d(TAG, "Accepted Connect 4 invite from $peerID with color ${preferredColor.name}")
         } else {
@@ -860,7 +889,7 @@ class ChatViewModel(
     }
 
     /**
-     * Send a game-related message
+     * Send a game-related message (doesn't add to chat)
      */
     private fun sendGameMessage(peerID: String, message: String) {
         val recipientNickname = meshService.getPeerNicknames()[peerID]
@@ -869,11 +898,13 @@ class ChatViewModel(
             peerID,
             recipientNickname,
             state.getNicknameValue(),
-            meshService.myPeerID
-        ) { messageContent, peerIDParam, recipientNicknameParam, messageId ->
-            val router = com.bitchat.android.services.MessageRouter.getInstance(getApplication(), meshService)
-            router.sendPrivate(messageContent, peerIDParam, recipientNicknameParam, messageId)
-        }
+            meshService.myPeerID,
+            skipAddToChat = true,  // Don't show game messages in chat
+            onSendMessage = { messageContent, peerIDParam, recipientNicknameParam, messageId ->
+                val router = com.bitchat.android.services.MessageRouter.getInstance(getApplication(), meshService)
+                router.sendPrivate(messageContent, peerIDParam, recipientNicknameParam, messageId)
+            }
+        )
     }
 
     /**
@@ -941,10 +972,18 @@ class ChatViewModel(
     }
 
     /**
-     * Get game setup state for a peer
+     * Get game setup state for a peer (from observable state)
      */
     fun getConnect4SetupState(peerID: String): com.bitchat.android.games.Connect4GameManager.GameSetupState {
-        return connect4GameManager.getGameSetupState(peerID)
+        return state.getConnect4SetupState(peerID)
+    }
+
+    /**
+     * Update game setup state in observable state (call this when state changes)
+     */
+    private fun updateConnect4SetupState(peerID: String) {
+        val setupState = connect4GameManager.getGameSetupState(peerID)
+        state.setConnect4SetupState(peerID, setupState)
     }
 
     /**
@@ -974,6 +1013,7 @@ class ChatViewModel(
      */
     fun declineConnect4Invite(peerID: String) {
         val declineMessage = connect4GameManager.declineInvite(peerID)
+        updateConnect4SetupState(peerID) // Update observable state
         sendGameMessage(peerID, declineMessage)
         state.setShowConnect4ColorSelection(null)
         Log.d(TAG, "Declined Connect 4 invite from $peerID")
@@ -984,6 +1024,18 @@ class ChatViewModel(
      */
     fun hasPendingConnect4Setup(peerID: String): Boolean {
         return connect4GameManager.hasPendingSetup(peerID)
+    }
+
+    /**
+     * Start a new game (reset state for new game setup)
+     */
+    fun startNewConnect4Game(peerID: String) {
+        // End the current game to clear state
+        connect4GameManager.endGame(peerID)
+        // Clear the game from UI state
+        state.setConnect4Game(peerID, null)
+        updateConnect4SetupState(peerID) // Update observable state
+        // Don't change showConnect4Game here - let the caller handle it
     }
 
     // MARK: - Emergency Clear

@@ -61,6 +61,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val connect4Games by viewModel.connect4Games.collectAsStateWithLifecycle()
     val showConnect4Game by viewModel.showConnect4Game.collectAsStateWithLifecycle()
     val showConnect4ColorSelection by viewModel.showConnect4ColorSelection.collectAsStateWithLifecycle()
+    val connect4SetupStates by viewModel.connect4SetupStates.collectAsStateWithLifecycle()
 
     var messageText by remember { mutableStateOf(TextFieldValue("")) }
     var showPasswordPrompt by remember { mutableStateOf(false) }
@@ -135,13 +136,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
             // Connect 4 game UI (if active for this private chat)
             selectedPrivatePeer?.let { peerID ->
                 val currentGame = connect4Games[peerID]
-                val shouldShowGame = currentGame != null && (showConnect4Game == peerID || showConnect4Game == null)
+                val shouldShowGame = currentGame != null && showConnect4Game == peerID
 
                 if (shouldShowGame) {
-                    // Auto-show game if it exists and isn't explicitly hidden
-                    if (showConnect4Game != peerID) {
-                        viewModel.showConnect4Game(peerID)
-                    }
                     val myPiece = viewModel.getConnect4MyPiece(peerID)
                     if (myPiece != null) {
                         com.bitchat.android.games.Connect4Screen(
@@ -151,6 +148,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
                                 viewModel.makeConnect4Move(peerID, column)
                             },
                             onNewGame = {
+                                // Reset game setup state and show color selection for new game
+                                viewModel.startNewConnect4Game(peerID)
                                 viewModel.showConnect4ColorSelection(peerID)
                             },
                             onClose = {
@@ -162,7 +161,24 @@ fun ChatScreen(viewModel: ChatViewModel) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     }
-                } else if (viewModel.getConnect4SetupState(peerID) == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_RECEIVED) {
+                } else if (currentGame != null && showConnect4Game != peerID) {
+                    // Game exists but is hidden - show button to return to game
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.showConnect4Game(peerID)
+                            }
+                        ) {
+                            Text("Return to Connect 4 Game")
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                } else if (connect4SetupStates[peerID] == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_RECEIVED) {
                     // Show Accept/Decline buttons when we received an invite
                     Column(
                         modifier = Modifier

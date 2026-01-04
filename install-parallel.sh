@@ -4,7 +4,36 @@
 # Build the APK first (or use existing)
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 
+# Check if APK exists and if source files are newer
+NEEDS_BUILD=false
+
 if [ ! -f "$APK_PATH" ]; then
+    echo "APK not found. Building..."
+    NEEDS_BUILD=true
+else
+    # Check if any source files are newer than the APK
+    APK_TIME=$(stat -c %Y "$APK_PATH" 2>/dev/null || stat -f %m "$APK_PATH" 2>/dev/null)
+
+    # Check Kotlin source files
+    if find app/src/main/java -name "*.kt" -newer "$APK_PATH" 2>/dev/null | grep -q .; then
+        echo "Source files are newer than APK. Rebuilding..."
+        NEEDS_BUILD=true
+    # Check resource files
+    elif find app/src/main/res -newer "$APK_PATH" 2>/dev/null | grep -q .; then
+        echo "Resource files are newer than APK. Rebuilding..."
+        NEEDS_BUILD=true
+    # Check manifest
+    elif [ app/src/main/AndroidManifest.xml -nt "$APK_PATH" ] 2>/dev/null; then
+        echo "Manifest is newer than APK. Rebuilding..."
+        NEEDS_BUILD=true
+    # Check build.gradle files
+    elif find . -name "build.gradle*" -newer "$APK_PATH" 2>/dev/null | grep -q .; then
+        echo "Build files are newer than APK. Rebuilding..."
+        NEEDS_BUILD=true
+    fi
+fi
+
+if [ "$NEEDS_BUILD" = true ]; then
     echo "Building APK..."
     ./gradlew assembleDebug || exit 1
     echo "Build complete."
