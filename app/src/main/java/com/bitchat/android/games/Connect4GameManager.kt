@@ -15,6 +15,7 @@ class Connect4GameManager {
         const val START_PREFIX = "connect4_start:"
         const val DECLINE_PREFIX = "connect4_decline:"
         const val END_GAME_PREFIX = "connect4_end:"
+        const val CANCEL_PREFIX = "connect4_cancel:"
 
         /**
          * Check if a message is a game-related message
@@ -25,7 +26,8 @@ class Connect4GameManager {
                    content.startsWith(ACCEPT_PREFIX) ||
                    content.startsWith(START_PREFIX) ||
                    content.startsWith(DECLINE_PREFIX) ||
-                   content.startsWith(END_GAME_PREFIX)
+                   content.startsWith(END_GAME_PREFIX) ||
+                   content.startsWith(CANCEL_PREFIX)
         }
 
         /**
@@ -349,6 +351,31 @@ class Connect4GameManager {
     fun handleDecline(peerID: String) {
         gameSetups.remove(peerID)
         Log.d(TAG, "Game invite declined by $peerID")
+    }
+
+    /**
+     * Cancel an invite we sent (reset to no game state)
+     */
+    fun cancelInvite(peerID: String): String {
+        gameSetups.remove(peerID)
+        return CANCEL_PREFIX
+    }
+
+    /**
+     * Cancel an accept we sent (reset to no game state)
+     */
+    fun cancelAccept(peerID: String): String {
+        gameSetups.remove(peerID)
+        return CANCEL_PREFIX
+    }
+
+    /**
+     * Handle cancel message from opponent
+     * Resets both players to no game state
+     */
+    fun handleCancel(peerID: String) {
+        gameSetups.remove(peerID)
+        Log.d(TAG, "Game invite/accept cancelled by $peerID")
     }
 
     /**

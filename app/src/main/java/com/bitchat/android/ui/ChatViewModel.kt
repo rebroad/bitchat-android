@@ -903,6 +903,13 @@ class ChatViewModel(
                         state.setShowConnect4ColorSelection(null)
                         Log.d(TAG, "Game invite declined by $senderPeerID")
                     }
+                    content.startsWith(com.bitchat.android.games.Connect4GameManager.CANCEL_PREFIX) -> {
+                        // Cancel invite/accept (from opponent)
+                        connect4GameManager.handleCancel(senderPeerID)
+                        updateConnect4SetupState(senderPeerID) // Update observable state
+                        state.setShowConnect4ColorSelection(null)
+                        Log.d(TAG, "Game invite/accept cancelled by $senderPeerID")
+                    }
                     content.startsWith(com.bitchat.android.games.Connect4GameManager.END_GAME_PREFIX) -> {
                         // Opponent ended the game session
                         val endedGame = connect4GameManager.handleEndGame(senderPeerID)
@@ -1149,6 +1156,28 @@ class ChatViewModel(
         sendGameMessage(peerID, declineMessage)
         state.setShowConnect4ColorSelection(null)
         Log.d(TAG, "Declined Connect 4 invite from $peerID")
+    }
+
+    /**
+     * Cancel an invite we sent
+     */
+    fun cancelConnect4Invite(peerID: String) {
+        val cancelMessage = connect4GameManager.cancelInvite(peerID)
+        updateConnect4SetupState(peerID) // Update observable state
+        sendGameMessage(peerID, cancelMessage)
+        state.setShowConnect4ColorSelection(null)
+        Log.d(TAG, "Cancelled Connect 4 invite to $peerID")
+    }
+
+    /**
+     * Cancel an accept we sent
+     */
+    fun cancelConnect4Accept(peerID: String) {
+        val cancelMessage = connect4GameManager.cancelAccept(peerID)
+        updateConnect4SetupState(peerID) // Update observable state
+        sendGameMessage(peerID, cancelMessage)
+        state.setShowConnect4ColorSelection(null)
+        Log.d(TAG, "Cancelled Connect 4 accept to $peerID")
     }
 
     /**

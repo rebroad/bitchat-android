@@ -260,6 +260,15 @@ fun ChatScreen(viewModel: ChatViewModel) {
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.cancelConnect4Invite(peerID)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Cancel Invite")
+                        }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 } else if (connect4SetupStates[peerID] == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_READ) {
@@ -283,6 +292,38 @@ fun ChatScreen(viewModel: ChatViewModel) {
                             style = MaterialTheme.typography.bodyMedium,
                             color = colorScheme.onSurfaceVariant
                         )
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                } else if (connect4SetupStates[peerID] == com.bitchat.android.games.Connect4GameManager.GameSetupState.ACCEPT_SENT) {
+                    // Show "Acceptance sent" message when we accepted an invite
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .background(colorScheme.surfaceVariant.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "Connect 4 Game Acceptance Sent",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Waiting for game to start...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.cancelConnect4Accept(peerID)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Cancel Acceptance")
+                        }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 } else if (!viewModel.hasConnect4Game(peerID) && !viewModel.hasPendingConnect4Setup(peerID)) {
