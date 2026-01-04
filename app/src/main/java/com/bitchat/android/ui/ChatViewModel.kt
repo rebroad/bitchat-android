@@ -794,6 +794,8 @@ class ChatViewModel(
                             connect4GameManager.handleInvite(senderPeerID, parsed.first, parsed.second)
                             // Update observable state so UI recomposes
                             updateConnect4SetupState(senderPeerID)
+                            val newState = connect4GameManager.getGameSetupState(senderPeerID)
+                            Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: $newState, observable state: ${state.getConnect4SetupState(senderPeerID)}")
                             // Show notification for game invite
                             val senderNickname = message.sender.takeIf { it != senderPeerID } ?: senderPeerID
                             notificationManager.showPrivateMessageNotification(
@@ -803,7 +805,8 @@ class ChatViewModel(
                             )
                             // Ensure chat is initialized so UI can show the invite banner
                             messageManager.initializePrivateChat(senderPeerID)
-                            Log.d(TAG, "Received Connect 4 invite from $senderPeerID, state: ${connect4GameManager.getGameSetupState(senderPeerID)}")
+                        } else {
+                            Log.w(TAG, "Failed to parse Connect 4 invite from $senderPeerID: $content")
                         }
                     }
                     content.startsWith(com.bitchat.android.games.Connect4GameManager.ACCEPT_PREFIX) -> {
@@ -886,6 +889,23 @@ class ChatViewModel(
     
     override fun didReceiveReadReceipt(messageID: String, recipientPeerID: String) {
         meshDelegateHandler.didReceiveReadReceipt(messageID, recipientPeerID)
+
+        // Check if this read receipt is for a game invite message
+        // If we sent an invite to this peer and it's in INVITE_SENT state, mark it as INVITE_READ
+        val setupState = connect4GameManager.getGameSetupState(recipientPeerID)
+        if (setupState == com.bitchat.android.games.Connect4GameManager.GameSetupState.INVITE_SENT) {
+            // Check if this messageID corresponds to an invite message we sent
+            val chats = state.getPrivateChatsValue()
+            val messages = chats[recipientPeerID] ?: emptyList()
+            val inviteMessage = messages.find { it.id == messageID &&
+                com.bitchat.android.games.Connect4GameManager.isGameInvite(it.content) &&
+                it.senderPeerID == meshService.myPeerID }
+            if (inviteMessage != null) {
+                connect4GameManager.markInviteRead(recipientPeerID)
+                updateConnect4SetupState(recipientPeerID)
+                Log.d(TAG, "Received read receipt for invite message, marked invite as read for $recipientPeerID")
+            }
+        }
     }
     
     override fun decryptChannelMessage(encryptedContent: ByteArray, channel: String): String? {

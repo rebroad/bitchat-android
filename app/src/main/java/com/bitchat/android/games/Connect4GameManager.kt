@@ -46,6 +46,7 @@ class Connect4GameManager {
     enum class GameSetupState {
         NONE,               // No game activity
         INVITE_SENT,        // We sent an invite, waiting for response
+        INVITE_READ,        // Invite was received/read by recipient (from inviter's perspective)
         INVITE_RECEIVED,    // We received an invite, need to respond
         ACCEPT_SENT,        // We accepted, waiting for start confirmation
         STARTED             // Game has started
@@ -369,8 +370,20 @@ class Connect4GameManager {
     fun hasPendingSetup(peerID: String): Boolean {
         val state = gameSetups[peerID]?.state
         return state == GameSetupState.INVITE_SENT ||
+               state == GameSetupState.INVITE_READ ||
                state == GameSetupState.INVITE_RECEIVED ||
                state == GameSetupState.ACCEPT_SENT
+    }
+
+    /**
+     * Mark invite as read (from inviter's perspective)
+     */
+    fun markInviteRead(peerID: String) {
+        val setup = gameSetups[peerID]
+        if (setup != null && setup.state == GameSetupState.INVITE_SENT) {
+            setup.state = GameSetupState.INVITE_READ
+            Log.d(TAG, "Marked invite as read for $peerID")
+        }
     }
 
     /**
